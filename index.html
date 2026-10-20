@@ -299,7 +299,7 @@ newUserIdInput.onkeypress = (e) => {
 
       try {
         showStatus("AI 번역 중...");
-        const response = await fetch('/.netlify/functions/translate', {
+        const response = await fetch('/api/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: text, targetLang: targetLang })
