@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>실시간 음성 & 텍스트 번역 채팅방</title>
+  <title>닝닝 번역 사이트</title>
   
   <!-- Firebase 8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -36,7 +36,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 h-dvh flex flex-col justify-between max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
+<body class="bg-slate-100 h-screen flex flex-col justify-between max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
 
   
   <!-- 상단 컨트롤 헤더 -->
@@ -157,8 +157,12 @@
       </button>
 
       <!-- 텍스트 입력창 -->
-      <input type="text" id="textInput" placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..." autocomplete="off"
-        class="flex-1 h-12 bg-slate-100 border border-slate-300 rounded-full px-4 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner">
+
+<!-- 텍스트 입력창 -->
+<textarea id="textInput" rows="1"
+  placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..."
+  autocomplete="off"
+  class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
 
       <!-- 전송 버튼 -->
       <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0">
@@ -179,7 +183,8 @@ let myUserId =
 
 localStorage.setItem('myUserId', myUserId);
 
-const roomId = urlParams.get('room') || 'testroom';
+const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const roomId = urlParams.get('room') || (isLocal ? 'devroom' : 'testroom');
 
 document.getElementById('userDisplay').innerText = myUserId;
     // Firebase 설정
@@ -294,33 +299,59 @@ newUserIdInput.onkeypress = (e) => {
     };
 
     async function translateText(text) {
-      const targetLangCode = targetLangSelect.value;
-      const targetLang = langMap[targetLangCode] || "English";
+  const targetLangCode = targetLangSelect.value;
+  const targetLang = langMap[targetLangCode] || "English";
+  
+  // 현재 설정된 화면 언어에 맞는 번역 문구셋 가져오기
+  const currentUiLang = uiLanguageSelect.value || 'ko';
+  const t = uiTranslations[currentUiLang] || uiTranslations.ko;
 
-      try {
-        showStatus("AI 번역 중...");
-        const response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, targetLang: targetLang })
-        });
+  try {
+    showStatus(t.translating);
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, targetLang: targetLang })
+    });
 
-        hideStatus();
+    hideStatus();
 
-        if (!response.ok) {
-          console.warn("Translation Server Warning:", response.statusText);
-          return null;
-        }
+   if (!response.ok) {
+  console.warn("Translation Server Warning:", response.status);
 
-        const data = await response.json();
-        return data.translated || null;
+  switch (response.status) {
+    case 404:
+      return t.failNotFound;
+    case 429:
+      return t.failLimit;
+    case 504:
+      return t.failTimeout;
+    case 500:
+    case 502:
+    case 503:
+      return t.failServer;
+    default:
+      return t.failDefault + "Error (" + response.status + ")";
+  }
+}
 
-      } catch (error) {
-        console.error("Translation Exception:", error);
-        hideStatus();
-        return null;
-      }
+    const data = await response.json();
+    if (!data.translated) {
+      return t.failEmpty;
     }
+    return data.translated;
+
+  } catch (error) {
+    console.error("Translation Exception:", error);
+    hideStatus();
+
+    if (error.name === "AbortError" || String(error.message).toLowerCase().includes("timeout")) {
+      return t.failTimeout;
+    }
+
+    return t.failConnection;
+  }
+}
 
     // 메시지 발송 함수
     async function sendMessage(text) {
@@ -341,59 +372,222 @@ newUserIdInput.onkeypress = (e) => {
       });
     }
 
-    // 전송 버튼 이벤트
+
+    // 입력창 높이 자동 조절
+    function resizeTextInput() {
+      textInput.style.height = '48px';
+
+      const maxHeight = 128;
+      const newHeight = Math.min(textInput.scrollHeight, maxHeight);
+
+      textInput.style.height = newHeight + 'px';
+      textInput.style.overflowY =
+        textInput.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+
+    textInput.addEventListener('input', resizeTextInput);
+
+    // 전송 버튼
     sendBtn.onclick = () => {
-      const val = textInput.value;
-      if (val.trim()) {
-        sendMessage(val);
-        textInput.value = '';
-      }
+      const val = textInput.value.trim();
+      if (!val) return;
+
+      textInput.value = '';
+      resizeTextInput();
+
+      sendMessage(val);
     };
 
-    // 엔터키 전송 이벤트
-    textInput.onkeypress = (e) => {
-      if (e.key === 'Enter') {
+    // Enter는 전송, Shift + Enter는 줄바꿈
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
         sendBtn.click();
       }
-    };
+    });
+
+
 
     // 실시간 메시지 수신 및 DOM 렌더링
+
     roomRef.on('child_added', (snapshot) => {
-      const data = snapshot.val();
-      const isMyMsg = data.sender === myUserId;
+  const data = snapshot.val();
+  if (!data) return;
 
-      const msgWrapper = document.createElement('div');
-      msgWrapper.className = `flex flex-col ${isMyMsg ? 'items-end' : 'items-start'} my-1`;
+  const isMyMsg = data.sender === myUserId;
 
-      const senderLabel = document.createElement('span');
-      senderLabel.className = 'text-[10px] text-slate-400 mb-0.5 px-1';
-      senderLabel.innerText = isMyMsg ? '나' : data.sender;
+  const msgWrapper = document.createElement('div');
+  msgWrapper.className =
+    `flex flex-col ${isMyMsg ? 'items-end' : 'items-start'} my-1`;
 
-      const msgBubble = document.createElement('div');
-      msgBubble.className = isMyMsg 
-        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm'
-        : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm';
+  // 날짜 구분선 갱신에 사용할 메시지 정보
+  msgWrapper.dataset.chatMessage = 'true';
+  msgWrapper.dataset.messageTimestamp = String(data.timestamp || '');
 
-      /* 원문 텍스트 */
-      let contentHtml = `<div class="text-xs md:text-sm ${isMyMsg ? 'text-indigo-200' : 'text-slate-400'} font-normal break-words leading-relaxed">${escapeHtml(data.text)}</div>`;
-      
-      /* 번역 텍스트 */
-      if (data.translatedText) {
-        contentHtml += `
-          <div class="mt-1 pt-1 border-t ${isMyMsg ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5">
-            <i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i>
-            <span>${escapeHtml(data.translatedText)}</span>
-          </div>`;
-      }
+  const senderLabel = document.createElement('span');
+  senderLabel.className =
+    'text-[10px] text-slate-400 mb-0.5 px-1';
 
-      msgBubble.innerHTML = contentHtml;
-      msgWrapper.appendChild(senderLabel);
-      msgWrapper.appendChild(msgBubble);
-      chatContainer.appendChild(msgWrapper);
+  senderLabel.innerText = isMyMsg
+    ? (uiTranslations[uiLanguageSelect.value] || uiTranslations.ko).me
+    : data.sender || '';
 
-      // 새 메시지가 추가되면 최신 메시지 위치로 이동
-      scrollChatToBottom();
+  const msgRow = document.createElement('div');
+  msgRow.className =
+    `flex items-end gap-1.5 w-full ${
+      isMyMsg ? 'justify-end' : 'justify-start'
+    }`;
+
+  const msgBubble = document.createElement('div');
+  msgBubble.className = isMyMsg
+    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm'
+    : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm';
+
+  // 원문
+  let contentHtml = `<div class="text-xs md:text-sm ${
+    isMyMsg ? 'text-indigo-200' : 'text-slate-400'
+  } font-normal break-words leading-relaxed">${escapeHtml(data.text || '')}</div>`;
+
+  // 번역문
+  if (data.translatedText) {
+    contentHtml += `
+      <div class="mt-1 pt-1 border-t ${
+        isMyMsg
+          ? 'border-indigo-500/50 text-white'
+          : 'border-slate-200/80 text-indigo-700'
+      } text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5">
+        <i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i>
+        <span>${escapeHtml(data.translatedText)}</span>
+      </div>`;
+  }
+
+  msgBubble.innerHTML = contentHtml;
+
+  // 메시지 시간
+  const timeLabel = document.createElement('span');
+  timeLabel.className =
+    'text-[10px] text-slate-400 whitespace-nowrap shrink-0 pb-0.5';
+  timeLabel.dataset.messageTimestamp = String(data.timestamp || '');
+  timeLabel.textContent = formatMessageTime(data.timestamp);
+
+  // 내 메시지는 시간 왼쪽, 상대 메시지는 시간 오른쪽
+  if (isMyMsg) {
+    msgRow.appendChild(timeLabel);
+    msgRow.appendChild(msgBubble);
+  } else {
+    msgRow.appendChild(msgBubble);
+    msgRow.appendChild(timeLabel);
+  }
+
+  msgWrapper.appendChild(senderLabel);
+  msgWrapper.appendChild(msgRow);
+  chatContainer.appendChild(msgWrapper);
+
+  // 메시지 추가 후 날짜 구분선 및 시간 갱신
+  refreshMessageTimes();
+  scrollChatToBottom();
+});
+
+
+
+    function getMessageTimeSettings() {
+  const settings = {
+    ko: { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+    zh: { locale: 'zh-TW', timeZone: 'Asia/Taipei' },
+    ja: { locale: 'ja-JP', timeZone: 'Asia/Tokyo' },
+    en: { locale: 'en-US', timeZone: 'America/New_York' }
+  };
+
+  const lang =
+    document.getElementById('uiLanguageSelect')?.value || 'ko';
+
+  return settings[lang] || settings.ko;
+}
+
+function formatMessageTime(timestamp) {
+  if (!timestamp) return '';
+
+  const settings = getMessageTimeSettings();
+
+  return new Date(Number(timestamp)).toLocaleTimeString(
+    settings.locale,
+    {
+      timeZone: settings.timeZone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }
+  );
+}
+
+function refreshMessageTimes() {
+  const settings = getMessageTimeSettings();
+  const messages = Array.from(
+    chatContainer.querySelectorAll('[data-chat-message="true"]')
+  );
+
+  // 기존 날짜 구분선을 제거하고 현재 언어 기준으로 다시 생성
+  chatContainer.querySelectorAll('.message-date-separator')
+    .forEach(element => element.remove());
+
+  let previousDateKey = '';
+
+  messages.forEach(message => {
+    const timestamp = Number(message.dataset.messageTimestamp);
+
+    if (!timestamp) return;
+
+    const date = new Date(timestamp);
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: settings.timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+
+    const dateParts = {};
+    parts.forEach(part => {
+      dateParts[part.type] = part.value;
     });
+
+    const dateKey =
+      `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+
+    // 메시지 시간 갱신
+    const timeLabel = message.querySelector('[data-message-timestamp]');
+    if (timeLabel) {
+      timeLabel.textContent = formatMessageTime(timestamp);
+    }
+
+    // 날짜가 바뀐 첫 메시지 앞에만 날짜 구분선 삽입
+    if (dateKey !== previousDateKey) {
+      const separator = document.createElement('div');
+      separator.className =
+        'message-date-separator flex justify-center my-4 w-full';
+
+      const dateLabel = document.createElement('span');
+      dateLabel.className =
+        'bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full';
+
+      dateLabel.textContent = date.toLocaleDateString(
+        settings.locale,
+        {
+          timeZone: settings.timeZone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long'
+        }
+      );
+
+      separator.appendChild(dateLabel);
+      chatContainer.insertBefore(separator, message);
+
+      previousDateKey = dateKey;
+    }
+  });
+}
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -484,8 +678,11 @@ newUserIdInput.onkeypress = (e) => {
 
         if (finalTranscript.trim()) {
           const currentVal = textInput.value;
-          textInput.value = currentVal ? (currentVal + ' ' + finalTranscript.trim()) : finalTranscript.trim();
-        }
+          textInput.value = currentVal
+  ? (currentVal + ' ' + finalTranscript.trim())
+  : finalTranscript.trim();
+
+resizeTextInput();        }
       };
 
       recognition.onerror = (event) => {
@@ -506,7 +703,7 @@ newUserIdInput.onkeypress = (e) => {
       micBtn.title = "현재 브라우저는 음성 인식을 지원하지 않습니다.";
     }
     // ===== 화면 언어 설정 및 다국어 사전 =====
-const uiTranslations = {
+    const uiTranslations = {
   ko: {
     myId: '내 ID',
     title: 'AI 번역 채팅방',
@@ -527,7 +724,15 @@ const uiTranslations = {
     translating: 'AI 번역 중...',
     processing: '번역 처리 중...',
     me: '나',
-    unsupported: '현재 브라우저는 음성 인식을 지원하지 않습니다.'
+    unsupported: '현재 브라우저는 음성 인식을 지원하지 않습니다.',
+    // 추가된 번역 실패 문구
+    failNotFound: '⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.',
+    failLimit: '⚠️ 번역 실패: API 사용량 한도 초과. 잠시 후 다시 시도해 주세요.',
+    failServer: '⚠️ 번역 실패: AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
+    failTimeout: '⚠️ 번역 실패: AI 응답 시간 초과. 잠시 후 다시 시도해 주세요.',
+    failConnection: '⚠️ 번역 실패: 서버 연결을 확인해 주세요.',
+    failEmpty: '⚠️ 번역 실패: 번역 결과를 받지 못했습니다.',
+    failDefault: '⚠️ 번역 실패: '
   },
   zh: {
     myId: '我的 ID：',
@@ -549,7 +754,15 @@ const uiTranslations = {
     translating: 'AI 翻譯中...',
     processing: '正在處理翻譯...',
     me: '我',
-    unsupported: '目前的瀏覽器不支援語音辨識。'
+    unsupported: '目前的瀏覽器不支援語音辨識。',
+    // 繁體中文 失敗 문구
+    failNotFound: '⚠️ 翻譯失敗：找不到翻譯伺服器。',
+    failLimit: '⚠️ 翻譯失敗：API 使用量已達上限，請稍後再試。',
+    failServer: '⚠️ 翻譯失敗：AI 伺服器繁忙，請稍後再試。',
+    failTimeout: '⚠️ 翻譯失敗：AI 回應逾時，請稍後再試。',
+    failConnection: '⚠️ 翻譯失敗：請檢查伺服器連線。',
+    failEmpty: '⚠️ 翻譯失敗：未收到翻譯結果。',
+    failDefault: '⚠️ 翻譯失敗：'
   },
   ja: {
     myId: '自分のID：',
@@ -571,7 +784,15 @@ const uiTranslations = {
     translating: 'AI翻訳中...',
     processing: '翻訳を処理しています...',
     me: '自分',
-    unsupported: 'このブラウザは音声認識に対応していません。'
+    unsupported: 'このブラウザは音声認識に対応していません。',
+    // 日本語 失敗 문구
+    failNotFound: '⚠️ 翻訳失敗：翻訳サーバーが見つかりません。',
+    failLimit: '⚠️ 翻訳失敗：APIの使用量制限を超えました。しばらくしてからもう一度お試しください。',
+    failServer: '⚠️ 翻訳失敗：AIサーバーが混雑しています。しばらくしてからもう一度お試しください。',
+    failTimeout: '⚠️ 翻訳失敗：AIの応答がタイムアウトしました。しばらくしてからもう一度お試しください。',
+    failConnection: '⚠️ 翻訳失敗：サーバーの接続をご確認ください。',
+    failEmpty: '⚠️ 翻訳失敗：翻訳結果を取得できませんでした。',
+    failDefault: '⚠️ 翻訳失敗：'
   },
   en: {
     myId: 'My ID:',
@@ -593,7 +814,15 @@ const uiTranslations = {
     translating: 'AI translating...',
     processing: 'Translation in progress...',
     me: 'Me',
-    unsupported: 'Speech recognition is not supported by this browser.'
+    unsupported: 'Speech recognition is not supported by this browser.',
+    // English 失敗 문구
+    failNotFound: '⚠️ Translation failed: Translation server not found.',
+    failLimit: '⚠️ Translation failed: API usage limit exceeded. Please try again later.',
+    failServer: '⚠️ Translation failed: AI server is busy. Please try again later.',
+    failTimeout: '⚠️ Translation failed: AI response timed out. Please try again later.',
+    failConnection: '⚠️ Translation failed: Please check your server connection.',
+    failEmpty: '⚠️ Translation failed: No translation result received.',
+    failDefault: '⚠️ Translation failed: '
   }
 };
 
@@ -602,6 +831,7 @@ const uiLanguageSelect = document.getElementById('uiLanguageSelect');
 function applyUILanguage() {
   const lang = uiLanguageSelect.value;
   const t = uiTranslations[lang] || uiTranslations.ko;
+  refreshMessageTimes();
 
   document.documentElement.lang =
     lang === 'zh' ? 'zh-TW' : lang;

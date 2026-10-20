@@ -8,7 +8,26 @@ module.exports = async function (req, res) {
   }
 
   try {
-    const { text, targetLang } = req.body || {};
+    let requestBody;
+    try {
+      requestBody = req.body;
+    } catch (bodyError) {
+      return res.status(400).json({
+        error: "Request body must be valid JSON."
+      });
+    }
+
+    if (typeof requestBody === "string") {
+      try {
+        requestBody = JSON.parse(requestBody);
+      } catch (parseError) {
+        return res.status(400).json({
+          error: "Request body must be valid JSON."
+        });
+      }
+    }
+
+    const { text, targetLang } = requestBody || {};
 
     if (typeof text !== "string" || !text.trim()) {
       return res.status(400).json({
@@ -49,7 +68,7 @@ module.exports = async function (req, res) {
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     let response;
 
@@ -70,7 +89,10 @@ module.exports = async function (req, res) {
           }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 512
+            maxOutputTokens: 2048,
+            thinkingConfig: {
+              thinkingLevel: "MINIMAL"
+            }
           }
         }),
         signal: controller.signal
@@ -94,12 +116,19 @@ module.exports = async function (req, res) {
 
     const data = await response.json();
 
+    const finishReason = data.candidates?.[0]?.finishReason;
     const translated = data.candidates?.[0]?.content?.parts
+      ?.filter(part => !part.thought)
       ?.map(part => part.text || "")
       .join("")
       .trim() || "";
 
     if (!translated) {
+      console.error(
+        "Gemini returned empty translation. finishReason:",
+        finishReason || "unknown"
+      );
+
       return res.status(502).json({
         error: "The translation service returned an empty response."
       });
@@ -117,10 +146,6 @@ module.exports = async function (req, res) {
       error.message
     );
 
-    return res.status(isTimeout ? 504 : 500).json({
-      error: isTimeout
-        ? "Translation request timed out. Please try again."
-        : "An internal translation error occurred."
-    });
+    return res.status(isTimeout ? 504 : 500).json({});
   }
 };
