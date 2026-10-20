@@ -2,74 +2,52 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
   <title>닝닝 번역 사이트</title>
-  
-  <!-- Firebase 8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .chat-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-    .chat-scroll::-webkit-scrollbar-thumb {
-      background-color: #cbd5e1;
-      border-radius: 3px;
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    }
-    .recording-active {
-      animation: pulse-ring 1.5s infinite;
-      background-color: #ef4444 !important;
-    }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .chat-scroll::-webkit-scrollbar { width: 6px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+    @keyframes pulse-ring { 0% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(239,68,68,.7); } 70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(239,68,68,0); } 100% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+    .recording-active { animation: pulse-ring 1.5s infinite; background-color: #ef4444 !important; }
+    .modal-backdrop { background: rgba(15,23,42,.45); backdrop-filter: blur(4px); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .safe-bottom { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
+    .hdr-pill { display:inline-flex; align-items:center; gap:.5rem; height:2.6rem; padding:0 .85rem 0 .3rem; border-radius:9999px; background:#fff; border:1.5px solid #c7d2fe; box-shadow:0 1px 3px rgba(79,70,229,.14); color:#312e81; font-size:.8125rem; font-weight:600; line-height:1.15; white-space:nowrap; max-width:100%; transition:background .15s,border-color .15s,box-shadow .15s; }
+    .hdr-pill:hover { background:#eef2ff; border-color:#818cf8; box-shadow:0 2px 8px rgba(79,70,229,.22); }
+    .hdr-pill.lang { padding:0 .9rem; gap:.45rem; }
+    .hdr-pill .pill-label { display:block; font-size:.625rem; font-weight:600; color:#6366f1; letter-spacing:.02em; }
+    .hdr-pill .pill-name { display:block; font-size:.9rem; font-weight:700; color:#1e1b4b; max-width:9rem; overflow:hidden; text-overflow:ellipsis; }
+    .hdr-pill .pill-sub { color:#818cf8; font-size:.72rem; }
+    .user-avatar { width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.9rem; flex-shrink:0; box-shadow:inset 0 0 0 2px rgba(255,255,255,.35); }
+    .ui-language-option.lang-active { background:#eef2ff; color:#4338ca; font-weight:700; }
   </style>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col justify-between max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
+<body class="bg-slate-100 min-h-screen max-w-2xl mx-auto shadow-2xl relative">
 
-  
-  <!-- 상단 컨트롤 헤더 -->
-  <header class="bg-white border-b border-slate-200 p-3 flex flex-col gap-2 shadow-sm z-10">
-
-    <!-- 첫째 줄: 제목, 내 ID, ID 설정, 화면 언어 -->
-    <div class="flex items-center justify-between gap-2">
-      <h1 id="uiTitle" class="font-bold text-slate-800 text-base md:text-lg shrink-0">
-        AI 번역 채팅방
-      </h1>
-
-      <div class="flex items-center gap-1 min-w-0">
-        <span class="text-xs text-slate-500 whitespace-nowrap">
-          <span id="uiMyIdLabel">내 ID:</span>
-          <b id="userDisplay" class="text-indigo-600">UserA</b>
-        </span>
-
-        <button id="changeUserBtn" title="ID 변경"
-          class="px-1 text-slate-400 hover:text-indigo-600 transition-colors shrink-0">
-          <i class="fa-solid fa-pen-to-square"></i>
+  <!-- 채팅방 목록 화면 -->
+  <section id="lobbyScreen" class="min-h-screen bg-slate-50 flex flex-col">
+    <header class="bg-white border-b border-slate-200 p-4 shadow-sm">
+      <div class="min-w-0">
+        <h1 id="lobbyTitle" class="font-bold text-slate-800 text-xl">AI 번역 채팅방</h1>
+        <p id="lobbySubtitle" class="text-xs text-slate-500 mt-1">채팅방을 선택하거나 새로 만들어 보세요.</p>
+      </div>
+      <div class="flex items-center justify-between gap-2 mt-3">
+        <button id="lobbyChangeUserBtn" type="button" class="hdr-pill min-w-0" title="ID">
+          <span id="lobbyUserAvatar" class="user-avatar">U</span>
+          <span class="min-w-0 text-left"><span id="lobbyMyIdLabel" class="pill-label">내 ID</span><span id="lobbyUserDisplay" class="pill-name">UserA</span></span>
+          <i class="fa-solid fa-pen pill-sub"></i>
         </button>
-
         <div class="relative shrink-0">
-          <button id="uiLanguageButton" type="button"
-            class="px-2 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg whitespace-nowrap">
-            🌐 한국어 ▼
-          </button>
-
-          <div id="uiLanguagePopup"
-            class="hidden absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
-            <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">
-              화면 언어 선택
-            </p>
+          <button id="lobbyLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><span aria-hidden="true">🌐</span><span id="lobbyLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <div id="lobbyLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
+            <p id="lobbyLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
             <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇰🇷 한국어</button>
             <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇹🇼 繁體中文</button>
             <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇯🇵 日本語</button>
@@ -77,884 +55,1093 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 둘째 줄: 입력 언어와 번역 언어 -->
-    <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
-      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-        <span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span>
-        <select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700">
-          <option value="ko">한국어</option>
-          <option value="zh">대만어 (繁體中文)</option>
-          <option value="ja">일본어 (日本語)</option>
-          <option value="en">영어 (English)</option>
-        </select>
+    </header>
+    <main class="flex-1 p-4">
+      <div class="flex gap-2 mb-4">
+        <div class="flex-1 relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="roomSearchInput" type="search" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" placeholder="채팅방 검색">
+        </div>
+        <button id="createRoomOpenBtn" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 text-sm font-semibold whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i><span id="createRoomButtonText">새 채팅방</span></button>
       </div>
-
-      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-        <span id="uiTargetLabel" class="text-indigo-600 font-medium mr-1.5 shrink-0">번역:</span>
-        <select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700">
-          <option value="zh">대만어 (繁體中文)</option>
-          <option value="ko">한국어</option>
-          <option value="ja">일본어 (日本語)</option>
-          <option value="en">영어 (English)</option>
-        </select>
+      <div class="flex items-center justify-between mb-2 px-1">
+        <div class="flex items-baseline gap-2 min-w-0">
+          <h2 id="roomListHeading" class="text-sm font-bold text-slate-700">채팅방 목록</h2>
+          <span id="roomCountLabel" class="text-xs text-slate-400"></span>
+        </div>
+        <button id="roomEditToggleBtn" type="button" class="text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-1.5 whitespace-nowrap"><i id="roomEditToggleIcon" class="fa-solid fa-pen mr-1"></i><span id="roomEditToggleText">수정</span></button>
       </div>
-    </div>
+      <div id="roomList" class="space-y-2">
+        <div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i><span id="roomLoadingText">채팅방을 불러오는 중...</span></div>
+      </div>
+    </main>
+    <footer class="text-center text-[11px] text-slate-400 p-4">AI Translation Chat</footer>
+  </section>
 
-    <!-- 화면 언어 설정: 기존 JavaScript 호환용 -->
-    <select id="uiLanguageSelect" class="hidden" aria-hidden="true" tabindex="-1">
-      <option value="ko">한국어</option>
-      <option value="zh">繁體中文（台灣）</option>
-      <option value="ja">日本語</option>
-      <option value="en">English</option>
-    </select>
-
-  </header>
-
-  <!-- 대화창 영역 -->
-  <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 chat-scroll bg-slate-50/50">
-    <div class="text-center my-2">
-      <span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">
-        채팅방에 연결되었습니다. 대화를 시작하세요!
-      </span>
-    </div>
-  </main>
-
-  <!-- ID 변경 모달 (커스텀 팝업) -->
-  <div id="userModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-        <h3 id="uiModalTitle" class="font-bold text-slate-800 text-base flex items-center gap-2">
-          <i class="fa-solid fa-user-gear text-indigo-600"></i> 사용자 ID 설정
-        </h3>
-        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">
-          <i class="fa-solid fa-xmark"></i>
+  <!-- 채팅 화면: 방에 정상 입장한 뒤에만 표시 -->
+  <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden">
+    <header class="bg-white border-b border-slate-200 p-3 flex flex-col gap-2.5 shadow-sm z-10 shrink-0">
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div class="justify-self-start">
+          <button id="roomListBtn" class="h-9 px-3 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 whitespace-nowrap"><i class="fa-solid fa-list mr-1"></i><span id="roomListButtonText">목록</span></button>
+        </div>
+        <div class="min-w-0 max-w-[58vw] text-center">
+          <h1 id="uiTitle" class="text-[11px] font-semibold tracking-wide text-indigo-500 leading-none mb-1">AI 번역</h1>
+          <div id="currentRoomName" class="text-xl font-extrabold text-slate-800 truncate leading-tight"></div>
+        </div>
+        <div class="justify-self-end">
+          <button id="roomSettingsBtn" title="채팅방 설정" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 text-sm hover:bg-slate-200"><i class="fa-solid fa-gear"></i></button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <button id="changeUserBtn" type="button" class="hdr-pill min-w-0" title="ID">
+          <span id="userAvatar" class="user-avatar">U</span>
+          <span class="min-w-0 text-left"><span id="uiMyIdLabel" class="pill-label">내 ID</span><span id="userDisplay" class="pill-name">UserA</span></span>
+          <i class="fa-solid fa-pen pill-sub"></i>
         </button>
+        <div class="relative shrink-0">
+          <button id="uiLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><span aria-hidden="true">🌐</span><span id="uiLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <div id="uiLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
+            <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
+            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇰🇷 한국어</button>
+            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇹🇼 繁體中文</button>
+            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇯🇵 日本語</button>
+            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇺🇸 English</button>
+          </div>
+        </div>
       </div>
-      <div>
-        <label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label>
-        <input type="text" id="newUserIdInput" placeholder="예: 홍길동, Alex..." 
-               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
+      <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
+        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"><span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
+        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"><span id="uiTargetLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">번역:</span><select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="zh">대만어 (繁體中文)</option><option value="ko">한국어</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
       </div>
-      <div class="flex justify-end gap-2 pt-1">
-        <button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">취소</button>
-        <button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition-colors">저장하기</button>
+    </header>
+    <main id="chatContainer" class="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3 chat-scroll bg-slate-50/70">
+      <div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
+    </main>
+    <footer class="bg-white border-t border-slate-200 p-3 z-10 shrink-0 safe-bottom">
+      <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1 animate-pulse px-2 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
+      <div class="flex items-end gap-2">
+        <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg hover:bg-indigo-700 transition-all shadow-md shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
+        <textarea id="textInput" rows="1" placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..." autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
+        <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
+    </footer>
+  </div>
+
+  <!-- 비밀번호 입장 모달 -->
+  <div id="entryModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
+      <div class="flex items-start gap-3"><div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
+      <input id="entryPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
+      <p id="entryError" class="hidden text-xs text-red-600"></p>
+      <div class="flex gap-2"><button id="entryCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="entryConfirmBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">입장</button></div>
     </div>
   </div>
 
-  <!-- 하단 입력창 컨트롤 영역 -->
-  <footer class="bg-white border-t border-slate-200 p-3 z-10">
-    <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1 animate-pulse px-2 flex items-center gap-1">
-      <i class="fa-solid fa-spinner fa-spin"></i> <span id="statusText">번역 처리 중...</span>
+  <!-- 새 채팅방 생성 모달 -->
+  <div id="createRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+      <div class="flex items-center justify-between"><h3 id="createModalTitle" class="font-bold text-slate-800 text-lg">새 채팅방 만들기</h3><button id="createModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label id="roomNameLabel" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" maxlength="40" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
+      <label class="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl"><span><span id="createPasswordLabel" class="block text-sm font-medium text-slate-700">비밀번호 사용</span><span id="createPasswordHint" class="block text-xs text-slate-500 mt-0.5">필요한 경우 비밀번호를 설정하세요.</span></span><input id="createPasswordToggle" type="checkbox" class="w-5 h-5 accent-indigo-600"></label>
+      <div id="createPasswordFields" class="hidden"><label id="newRoomPasswordLabel" for="newRoomPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label><input id="newRoomPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호 입력"></div>
+      <p id="createRoomError" class="hidden text-xs text-red-600"></p>
+      <div class="flex gap-2"><button id="createRoomCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="createRoomSubmitBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">만들기</button></div>
     </div>
+  </div>
 
-    <div class="flex items-center gap-2">
-      <!-- 음성 입력 버튼 -->
-      <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg hover:bg-indigo-700 transition-all shadow-md shrink-0">
-        <i id="micIcon" class="fa-solid fa-microphone"></i>
-      </button>
-
-      <!-- 텍스트 입력창 -->
-
-<!-- 텍스트 입력창 -->
-<textarea id="textInput" rows="1"
-  placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..."
-  autocomplete="off"
-  class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
-
-      <!-- 전송 버튼 -->
-      <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0">
-        <i class="fa-solid fa-paper-plane"></i>
-      </button>
+  <!-- 채팅방 비밀번호 설정 모달 -->
+  <div id="roomSettingsModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+      <div class="flex items-center justify-between"><h3 id="settingsModalTitle" class="font-bold text-slate-800 text-lg">채팅방 설정</h3><button id="settingsModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label for="settingsRoomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" maxlength="40" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
+      <div class="p-3 rounded-xl bg-slate-50"><p id="settingsPasswordStatus" class="text-xs text-slate-500"></p></div>
+      <div><label id="passwordActionLabel" for="passwordActionSelect" class="block text-xs font-medium text-slate-600 mb-1.5">변경할 설정</label><select id="passwordActionSelect" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm bg-white"><option value="enable">비밀번호 켜기</option><option value="disable">비밀번호 끄기</option><option value="change">비밀번호 변경</option></select></div>
+      <div id="currentPasswordFields" class="hidden"><label id="currentPasswordLabel" for="currentPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">현재 비밀번호</label><input id="currentPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="현재 비밀번호"></div>
+      <div id="settingsNewPasswordFields"><label id="settingsNewPasswordLabel" for="settingsNewPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">새 비밀번호</label><input id="settingsNewPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="새 비밀번호 입력"></div>
+      <p id="settingsError" class="hidden text-xs text-red-600"></p>
+      <div class="flex gap-2"><button id="settingsCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="settingsSaveBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">저장</button></div>
     </div>
-  </footer>
+  </div>
 
-  <script>
-   
-   // URL 파라미터 수집 (방 번호 / 사용자 ID)
-const urlParams = new URLSearchParams(window.location.search);
+  <!-- 채팅방 아이콘·배경색 변경 모달 -->
+  <div id="iconPickerModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+      <div class="flex items-center justify-between"><h3 id="iconModalTitle" class="font-bold text-slate-800 text-lg">아이콘 변경</h3><button id="iconModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="flex items-center gap-3">
+        <div id="iconPreview" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"></div>
+        <p id="iconPreviewName" class="text-sm font-semibold text-slate-700 break-words min-w-0"></p>
+      </div>
+      <div><p id="iconGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">아이콘</p><div id="iconGrid" class="grid grid-cols-8 gap-1"></div></div>
+      <div><p id="colorGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">배경 색</p><div id="colorGrid" class="flex flex-wrap gap-2 items-center"></div></div>
+      <div class="flex gap-2"><button id="iconCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="iconSaveBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">저장</button></div>
+    </div>
+  </div>
 
-let myUserId =
-  urlParams.get('user') ||
-  localStorage.getItem('myUserId') ||
-  ('User_' + Math.floor(Math.random() * 1000));
+  <!-- 채팅방 삭제 확인 모달 -->
+  <div id="deleteRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></div>
+        <div class="flex-1 min-w-0">
+          <h3 id="deleteModalTitle" class="font-bold text-slate-800">채팅방 삭제</h3>
+          <p id="deleteModalRoomName" class="text-sm font-semibold text-slate-700 mt-1 break-words"></p>
+          <p id="deleteModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?</p>
+        </div>
+      </div>
+      <div id="deletePasswordFields" class="hidden">
+        <label id="deletePasswordLabel" for="deletePasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label>
+        <input id="deletePasswordInput" type="password" autocomplete="off" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-red-400" placeholder="비밀번호">
+      </div>
+      <p id="deleteError" class="hidden text-xs text-red-600"></p>
+      <div class="flex gap-2"><button id="deleteCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="deleteConfirmBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-xl">삭제</button></div>
+    </div>
+  </div>
 
-localStorage.setItem('myUserId', myUserId);
+  <!-- 사용자 ID 수정 모달 -->
+  <div id="userModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2"><h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-gear text-indigo-600"></i> <span id="uiModalTitle">사용자 ID 설정</span></h3><button id="closeModalBtn" class="text-slate-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
+      <div class="flex justify-end gap-2"><button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-xl">취소</button><button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-xl">저장하기</button></div>
+    </div>
+  </div>
 
-const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const roomId = urlParams.get('room') || (isLocal ? 'devroom' : 'testroom');
+<script>
+(() => {
+  'use strict';
 
-document.getElementById('userDisplay').innerText = myUserId;
-    // Firebase 설정
-    const firebaseConfig = {
-      databaseURL: "https://translator-16b24-default-rtdb.firebaseio.com/"
-    };
-    
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const database = firebase.database();
-    const roomRef = database.ref('rooms/' + roomId);
-    const typingRef = database.ref('typing/' + roomId);
+  const params = new URLSearchParams(window.location.search);
+  const requestedRoomId = params.get('room');
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname === '[::1]';
+  // 로컬 개발 데이터는 local/* 아래에 저장한다. 채팅 기록은 roomLog에 저장하며, 기존 rooms 데이터는 필요할 때 복사한다.
+  const dataPrefix = isLocal ? 'local/' : '';
+  const myUserIdInitial = params.get('user') || localStorage.getItem('myUserId') || ('User_' + Math.floor(Math.random() * 1000));
+  let myUserId = myUserIdInitial;
+  localStorage.setItem('myUserId', myUserId);
 
-    // DOM Elements
-    const chatContainer = document.getElementById('chatContainer');
+  const firebaseConfig = { databaseURL: 'https://translator-16b24-default-rtdb.firebaseio.com/' };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const directoryRef = database.ref(dataPrefix + 'roomDirectory');
 
-    // 채팅 내역이 로드되거나 화면 크기가 바뀌어도 최신 메시지 위치로 이동
-    function scrollChatToBottom() {
-      requestAnimationFrame(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-
-        // 레이아웃 계산이 한 번 더 끝난 뒤 위치를 보정
-        requestAnimationFrame(() => {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        });
-      });
-    }
-
-    // 페이지 레이아웃이 완성된 뒤에도 맨 아래 위치를 한 번 더 보장
-    window.addEventListener('load', () => {
-      scrollChatToBottom();
-      setTimeout(scrollChatToBottom, 150);
-      setTimeout(scrollChatToBottom, 500);
-    });
-
-    const micBtn = document.getElementById('micBtn');
-    const micIcon = document.getElementById('micIcon');
-    const textInput = document.getElementById('textInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const sourceLangSelect = document.getElementById('sourceLangSelect');
-    const targetLangSelect = document.getElementById('targetLangSelect');
-    const statusNotice = document.getElementById('statusNotice');
-    const statusText = document.getElementById('statusText');
-
-    // ID 변경 모달 요소
-    const changeUserBtn = document.getElementById('changeUserBtn');
-    const userModal = document.getElementById('userModal');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    const saveUserBtn = document.getElementById('saveUserBtn');
-    const newUserIdInput = document.getElementById('newUserIdInput');
-    const userDisplay = document.getElementById('userDisplay');
-
-    // 상태 메시지 표시 함수 추가
-    function showStatus(msg) {
-      statusText.innerText = msg;
-      statusNotice.classList.remove('hidden');
-    }
-
-    // 상태 메시지 숨김 함수 추가
-    function hideStatus() {
-      statusNotice.classList.add('hidden');
-    }
-
-    // 모달 열기
-    changeUserBtn.onclick = () => {
-      newUserIdInput.value = myUserId;
-      userModal.classList.remove('hidden');
-      newUserIdInput.focus();
-    };
-
-    // 모달 닫기
-    const closeModal = () => {
-      userModal.classList.add('hidden');
-    };
-
-    closeModalBtn.onclick = closeModal;
-    cancelModalBtn.onclick = closeModal;
-
-   // ID 저장
-saveUserBtn.onclick = () => {
-  const val = newUserIdInput.value.trim();
-  if (val) {
-    typingRef.child(myUserId).remove();
-    myUserId = val;
-    localStorage.setItem('myUserId', myUserId);
-    userDisplay.innerText = myUserId;
-    closeModal();
-  }
-};
-
-newUserIdInput.onkeypress = (e) => {
-  if (e.key === 'Enter') {
-    saveUserBtn.click();
-  }
-};
-    
-
-    newUserIdInput.onkeypress = (e) => {
-      if (e.key === 'Enter') {
-        saveUserBtn.click();
-      }
-    };
-
-    // 언어 코드 매핑
-    const langMap = {
-      'ko': 'Korean',
-      'zh': 'Traditional Chinese (Taiwan, 繁體中文)',
-      'ja': 'Japanese',
-      'en': 'English'
-    };
-
-    async function translateText(text) {
-  const targetLangCode = targetLangSelect.value;
-  const targetLang = langMap[targetLangCode] || "English";
-  
-  // 현재 설정된 화면 언어에 맞는 번역 문구셋 가져오기
-  const currentUiLang = uiLanguageSelect.value || 'ko';
-  const t = uiTranslations[currentUiLang] || uiTranslations.ko;
-
-  try {
-    showStatus(t.translating);
-    const response = await fetch('/api/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text, targetLang: targetLang })
-    });
-
-    hideStatus();
-
-   if (!response.ok) {
-  console.warn("Translation Server Warning:", response.status);
-
-  switch (response.status) {
-    case 404:
-      return t.failNotFound;
-    case 429:
-      return t.failLimit;
-    case 504:
-      return t.failTimeout;
-    case 500:
-    case 502:
-    case 503:
-      return t.failServer;
-    default:
-      return t.failDefault + "Error (" + response.status + ")";
-  }
-}
-
-    const data = await response.json();
-    if (!data.translated) {
-      return t.failEmpty;
-    }
-    return data.translated;
-
-  } catch (error) {
-    console.error("Translation Exception:", error);
-    hideStatus();
-
-    if (error.name === "AbortError" || String(error.message).toLowerCase().includes("timeout")) {
-      return t.failTimeout;
-    }
-
-    return t.failConnection;
-  }
-}
-
-    // 메시지 발송 함수
-    async function sendMessage(text) {
-      if (!text || !text.trim()) return;
-      const cleanText = text.trim();
-
-      typingRef.child(myUserId).remove();
-
-      // 번역 실행
-      const translated = await translateText(cleanText);
-
-      // Realtime Database 전송
-      roomRef.push({
-        sender: myUserId,
-        text: cleanText,
-        translatedText: translated || null,
-        timestamp: Date.now()
-      });
-    }
-
-
-    // 입력창 높이 자동 조절
-    function resizeTextInput() {
-      textInput.style.height = '48px';
-
-      const maxHeight = 128;
-      const newHeight = Math.min(textInput.scrollHeight, maxHeight);
-
-      textInput.style.height = newHeight + 'px';
-      textInput.style.overflowY =
-        textInput.scrollHeight > maxHeight ? 'auto' : 'hidden';
-    }
-
-    textInput.addEventListener('input', resizeTextInput);
-
-    // 전송 버튼
-    sendBtn.onclick = () => {
-      const val = textInput.value.trim();
-      if (!val) return;
-
-      textInput.value = '';
-      resizeTextInput();
-
-      sendMessage(val);
-    };
-
-    // Enter는 전송, Shift + Enter는 줄바꿈
-    textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-
-
-
-    // 실시간 메시지 수신 및 DOM 렌더링
-
-    roomRef.on('child_added', (snapshot) => {
-  const data = snapshot.val();
-  if (!data) return;
-
-  const isMyMsg = data.sender === myUserId;
-
-  const msgWrapper = document.createElement('div');
-  msgWrapper.className =
-    `flex flex-col ${isMyMsg ? 'items-end' : 'items-start'} my-1`;
-
-  // 날짜 구분선 갱신에 사용할 메시지 정보
-  msgWrapper.dataset.chatMessage = 'true';
-  msgWrapper.dataset.messageTimestamp = String(data.timestamp || '');
-
-  const senderLabel = document.createElement('span');
-  senderLabel.className =
-    'text-[10px] text-slate-400 mb-0.5 px-1';
-
-  senderLabel.innerText = isMyMsg
-    ? (uiTranslations[uiLanguageSelect.value] || uiTranslations.ko).me
-    : data.sender || '';
-
-  const msgRow = document.createElement('div');
-  msgRow.className =
-    `flex items-end gap-1.5 w-full ${
-      isMyMsg ? 'justify-end' : 'justify-start'
-    }`;
-
-  const msgBubble = document.createElement('div');
-  msgBubble.className = isMyMsg
-    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm'
-    : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm';
-
-  // 원문
-  let contentHtml = `<div class="text-xs md:text-sm ${
-    isMyMsg ? 'text-indigo-200' : 'text-slate-400'
-  } font-normal break-words leading-relaxed">${escapeHtml(data.text || '')}</div>`;
-
-  // 번역문
-  if (data.translatedText) {
-    contentHtml += `
-      <div class="mt-1 pt-1 border-t ${
-        isMyMsg
-          ? 'border-indigo-500/50 text-white'
-          : 'border-slate-200/80 text-indigo-700'
-      } text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5">
-        <i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i>
-        <span>${escapeHtml(data.translatedText)}</span>
-      </div>`;
-  }
-
-  msgBubble.innerHTML = contentHtml;
-
-  // 메시지 시간
-  const timeLabel = document.createElement('span');
-  timeLabel.className =
-    'text-[10px] text-slate-400 whitespace-nowrap shrink-0 pb-0.5';
-  timeLabel.dataset.messageTimestamp = String(data.timestamp || '');
-  timeLabel.textContent = formatMessageTime(data.timestamp);
-
-  // 내 메시지는 시간 왼쪽, 상대 메시지는 시간 오른쪽
-  if (isMyMsg) {
-    msgRow.appendChild(timeLabel);
-    msgRow.appendChild(msgBubble);
-  } else {
-    msgRow.appendChild(msgBubble);
-    msgRow.appendChild(timeLabel);
-  }
-
-  msgWrapper.appendChild(senderLabel);
-  msgWrapper.appendChild(msgRow);
-  chatContainer.appendChild(msgWrapper);
-
-  // 메시지 추가 후 날짜 구분선 및 시간 갱신
-  refreshMessageTimes();
-  scrollChatToBottom();
-});
-
-
-
-    function getMessageTimeSettings() {
-  const settings = {
-    ko: { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
-    zh: { locale: 'zh-TW', timeZone: 'Asia/Taipei' },
-    ja: { locale: 'ja-JP', timeZone: 'Asia/Tokyo' },
-    en: { locale: 'en-US', timeZone: 'America/New_York' }
+  const $ = id => document.getElementById(id);
+  const els = {
+    lobbyScreen: $('lobbyScreen'), chatApp: $('chatApp'), roomList: $('roomList'), roomSearchInput: $('roomSearchInput'),
+    chatContainer: $('chatContainer'), sourceLangSelect: $('sourceLangSelect'), targetLangSelect: $('targetLangSelect'),
+    statusNotice: $('statusNotice'), statusText: $('statusText'), micBtn: $('micBtn'), micIcon: $('micIcon'), textInput: $('textInput'), sendBtn: $('sendBtn'),
+    entryModal: $('entryModal'), entryPasswordInput: $('entryPasswordInput'), entryError: $('entryError'), createRoomModal: $('createRoomModal'),
+    roomSettingsModal: $('roomSettingsModal'), userModal: $('userModal')
   };
 
-  const lang =
-    document.getElementById('uiLanguageSelect')?.value || 'ko';
+  const LANGS = {
+    ko: { title:'AI 번역 채팅방', subtitle:'채팅방을 선택하거나 새로 만들어 보세요.', create:'새 채팅방', list:'채팅방 목록', search:'채팅방 검색', loading:'채팅방을 불러오는 중...', noRooms:'아직 채팅방이 없습니다. 새 채팅방을 만들어 보세요.', roomName:'채팅방 이름', createTitle:'새 채팅방 만들기', usePassword:'비밀번호 사용', passwordHint:'필요한 경우 비밀번호를 설정하세요.', password:'비밀번호', make:'만들기', cancel:'취소', enter:'입장', enterTitle:'비밀번호 입력', enterDesc:'이 채팅방에 입장하려면 비밀번호를 입력하세요.', wrongPassword:'비밀번호가 올바르지 않습니다.', roomSettings:'채팅방 설정', passwordOn:'비밀번호 사용 중', passwordOff:'비밀번호 사용 안 함', chooseAction:'변경할 설정', enable:'비밀번호 켜기', disable:'비밀번호 끄기', change:'비밀번호 변경', currentPassword:'현재 비밀번호', newPassword:'새 비밀번호', save:'저장', needPassword:'비밀번호를 입력하세요.', roomCreated:'채팅방을 만들었습니다.', passwordUpdated:'비밀번호 설정을 변경했습니다.', needCurrent:'현재 비밀번호를 입력하세요.', wrongCurrent:'현재 비밀번호가 올바르지 않습니다.', roomNameRequired:'채팅방 이름을 입력하세요.', roomNameTooLong:'채팅방 이름은 40자 이하로 입력하세요.', passwordRequired:'새 비밀번호를 입력하세요.', roomListButton:'목록', noSearchResults:'검색 결과가 없습니다.', welcome:'채팅방에 연결되었습니다. 대화를 시작하세요!', myId:'내 ID:', changeId:'사용자 ID 설정', idLabel:'새로 사용할 ID를 입력하세요', idPlaceholder:'예: 홍길동, Alex...', mic:'음성 입력', send:'전송', inputPlaceholder:'메시지를 입력하거나 마이크 버튼을 누르세요...', listening:'음성을 듣고 받아적는 중입니다...', translating:'AI 번역 중...', me:'나', source:'입력:', target:'번역:', failNotFound:'⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.', failLimit:'⚠️ 번역 실패: API 사용량 한도 초과.', failServer:'⚠️ 번역 실패: AI 서버가 혼잡합니다.', failTimeout:'⚠️ 번역 실패: AI 응답 시간 초과.', failConnection:'⚠️ 번역 실패: 서버 연결을 확인해 주세요.', failEmpty:'⚠️ 번역 실패: 번역 결과를 받지 못했습니다.', failDefault:'⚠️ 번역 실패: ', languageNames:['한국어','대만어 (繁體中文)','일본어 (日本語)','영어 (English)'], buttonLanguage:'🌐 한국어 ▼', languageTitle:'화면 언어 선택', created:'생성', passwordPrompt:'비밀번호 입력' },
+    zh: { title:'AI 翻譯聊天室', subtitle:'選擇聊天室或建立新聊天室。', create:'新增聊天室', list:'聊天室列表', search:'搜尋聊天室', loading:'正在載入聊天室...', noRooms:'目前沒有聊天室，請建立一個。', roomName:'聊天室名稱', createTitle:'建立新聊天室', usePassword:'使用密碼', passwordHint:'可選擇為聊天室設定密碼。', password:'密碼', make:'建立', cancel:'取消', enter:'進入', enterTitle:'輸入密碼', enterDesc:'請輸入密碼以進入聊天室。', wrongPassword:'密碼錯誤。', roomSettings:'聊天室設定', passwordOn:'已啟用密碼', passwordOff:'未使用密碼', chooseAction:'選擇設定', enable:'啟用密碼', disable:'關閉密碼', change:'變更密碼', currentPassword:'目前密碼', newPassword:'新密碼', save:'儲存', needPassword:'請輸入密碼。', roomCreated:'聊天室已建立。', passwordUpdated:'密碼設定已更新。', needCurrent:'請輸入目前密碼。', wrongCurrent:'目前密碼錯誤。', roomNameRequired:'請輸入聊天室名稱。', roomNameTooLong:'聊天室名稱最多 40 個字元。', passwordRequired:'請輸入新密碼。', roomListButton:'列表', noSearchResults:'沒有搜尋結果。', welcome:'已連線至聊天室，開始聊天吧！', myId:'我的 ID：', changeId:'使用者 ID 設定', idLabel:'請輸入要使用的 ID', idPlaceholder:'例如：小明、Alex...', mic:'語音輸入', send:'傳送', inputPlaceholder:'輸入訊息或點擊麥克風按鈕...', listening:'正在辨識語音...', translating:'AI 翻譯中...', me:'我', source:'輸入：', target:'翻譯：', failNotFound:'⚠️ 翻譯失敗：找不到翻譯伺服器。', failLimit:'⚠️ 翻譯失敗：API 使用量已達上限。', failServer:'⚠️ 翻譯失敗：AI 伺服器繁忙。', failTimeout:'⚠️ 翻譯失敗：AI 回應逾時。', failConnection:'⚠️ 翻譯失敗：請檢查伺服器連線。', failEmpty:'⚠️ 翻譯失敗：未收到翻譯結果。', failDefault:'⚠️ 翻譯失敗：', languageNames:['韓語','台灣中文（繁體）','日語','英語'], buttonLanguage:'🌐 繁體中文 ▼', languageTitle:'選擇介面語言', created:'建立', passwordPrompt:'輸入密碼' },
+    ja: { title:'AI翻訳チャットルーム', subtitle:'チャットルームを選択するか、新しく作成してください。', create:'新しい部屋', list:'チャットルーム一覧', search:'チャットルームを検索', loading:'チャットルームを読み込み中...', noRooms:'チャットルームがありません。新しく作成してください。', roomName:'チャットルーム名', createTitle:'新しいチャットルーム', usePassword:'パスワードを使用', passwordHint:'必要に応じてパスワードを設定できます。', password:'パスワード', make:'作成', cancel:'キャンセル', enter:'入室', enterTitle:'パスワードを入力', enterDesc:'入室するにはパスワードを入力してください。', wrongPassword:'パスワードが違います。', roomSettings:'ルーム設定', passwordOn:'パスワード設定あり', passwordOff:'パスワード設定なし', chooseAction:'設定を選択', enable:'パスワードを有効にする', disable:'パスワードを無効にする', change:'パスワードを変更', currentPassword:'現在のパスワード', newPassword:'新しいパスワード', save:'保存', needPassword:'パスワードを入力してください。', roomCreated:'チャットルームを作成しました。', passwordUpdated:'パスワード設定を更新しました。', needCurrent:'現在のパスワードを入力してください。', wrongCurrent:'現在のパスワードが違います。', roomNameRequired:'チャットルーム名を入力してください。', roomNameTooLong:'ルーム名は40文字以内で入力してください。', passwordRequired:'新しいパスワードを入力してください。', roomListButton:'一覧', noSearchResults:'検索結果がありません。', welcome:'チャットルームに接続しました。会話を始めましょう！', myId:'自分のID：', changeId:'ユーザーID設定', idLabel:'使用するIDを入力してください', idPlaceholder:'例：太郎、Alex...', mic:'音声入力', send:'送信', inputPlaceholder:'メッセージを入力するか、マイクを押してください...', listening:'音声を認識しています...', translating:'AI翻訳中...', me:'自分', source:'入力：', target:'翻訳：', failNotFound:'⚠️ 翻訳失敗：翻訳サーバーが見つかりません。', failLimit:'⚠️ 翻訳失敗：API使用量制限を超えました。', failServer:'⚠️ 翻訳失敗：AIサーバーが混雑しています。', failTimeout:'⚠️ 翻訳失敗：AI応答がタイムアウトしました。', failConnection:'⚠️ 翻訳失敗：サーバー接続を確認してください。', failEmpty:'⚠️ 翻訳失敗：翻訳結果を取得できませんでした。', failDefault:'⚠️ 翻訳失敗：', languageNames:['韓国語','台湾中国語（繁体字）','日本語','英語'], buttonLanguage:'🌐 日本語 ▼', languageTitle:'画面言語を選択', created:'作成', passwordPrompt:'パスワード入力' },
+    en: { title:'AI Translation Chat', subtitle:'Choose a chat room or create a new one.', create:'New room', list:'Chat rooms', search:'Search rooms', loading:'Loading chat rooms...', noRooms:'No chat rooms yet. Create one to get started.', roomName:'Room name', createTitle:'Create a chat room', usePassword:'Use a password', passwordHint:'Add a password if you want to restrict casual access.', password:'Password', make:'Create', cancel:'Cancel', enter:'Enter', enterTitle:'Enter password', enterDesc:'Enter the password to join this room.', wrongPassword:'Incorrect password.', roomSettings:'Room settings', passwordOn:'Password enabled', passwordOff:'No password', chooseAction:'Setting', enable:'Enable password', disable:'Disable password', change:'Change password', currentPassword:'Current password', newPassword:'New password', save:'Save', needPassword:'Please enter a password.', roomCreated:'Chat room created.', passwordUpdated:'Password settings updated.', needCurrent:'Please enter the current password.', wrongCurrent:'The current password is incorrect.', roomNameRequired:'Please enter a room name.', roomNameTooLong:'Room names must be 40 characters or fewer.', passwordRequired:'Please enter a new password.', roomListButton:'Rooms', noSearchResults:'No search results.', welcome:'Connected to the chat room. Start a conversation!', myId:'My ID:', changeId:'User ID Settings', idLabel:'Enter the ID you want to use', idPlaceholder:'e.g. Alex, John...', mic:'Voice input', send:'Send', inputPlaceholder:'Type a message or tap the microphone...', listening:'Listening to your voice...', translating:'AI translating...', me:'Me', source:'Input:', target:'Translate:', failNotFound:'⚠️ Translation failed: Translation server not found.', failLimit:'⚠️ Translation failed: API usage limit exceeded.', failServer:'⚠️ Translation failed: AI server is busy.', failTimeout:'⚠️ Translation failed: AI response timed out.', failConnection:'⚠️ Translation failed: Please check your server connection.', failEmpty:'⚠️ Translation failed: No translation result received.', failDefault:'⚠️ Translation failed: ', languageNames:['Korean','Traditional Chinese (Taiwan)','Japanese','English'], buttonLanguage:'🌐 English ▼', languageTitle:'Select interface language', created:'Created', passwordPrompt:'Enter password' }
+  };
 
-  return settings[lang] || settings.ko;
-}
+  // 화면 언어별 추가 문구 (목록 수정 모드, 삭제 창, 알림창 등)
+  const EDIT_LABELS = {
+    ko: { edit:'수정', done:'완료', settings:'채팅방 설정', remove:'채팅방 삭제', deleteFail:'채팅방 삭제에 실패했습니다. Firebase 권한을 확인해 주세요.', deleteTitle:'채팅방 삭제', deleteDesc:'이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?', deleteBtn:'삭제', keepPw:'비밀번호 유지', keepSetting:'비밀번호 설정 유지', langName:'한국어', myIdShort:'내 ID', roomTag:'AI 번역', iconTitle:'아이콘 변경', iconLabel:'아이콘', colorLabel:'배경 색', defaultIcon:'기본 아이콘', resetColor:'기본 색', customColor:'직접 선택', iconSaveFail:'아이콘을 저장하지 못했습니다. Firebase 권한을 확인해 주세요.', roomLoadFail:'채팅방 정보를 불러오지 못했습니다. Firebase 연결과 보안 규칙을 확인해 주세요.', invalidLink:'올바르지 않은 채팅방 링크입니다.', roomNotFound:'존재하지 않는 방입니다.', renamed:'채팅방 이름을 변경했습니다.', saved:'채팅방 설정을 저장했습니다.', sendFail:'메시지를 전송하지 못했습니다. Firebase 연결을 확인해 주세요.', sentWithoutTranslation:'원문만 전송되었습니다.', loadMore:'이전 대화 더보기', loadMoreFail:'이전 대화를 불러오지 못했습니다.', retryTranslate:'다시 번역', copyTranslation:'번역문 복사', copied:'복사됨', noMessages:'아직 메시지가 없어요', lockedPreview:'비밀번호가 설정된 방이에요', yesterday:'어제', newMessage:'새 메시지' },
+    zh: { edit:'編輯', done:'完成', settings:'聊天室設定', remove:'刪除聊天室', deleteFail:'刪除聊天室失敗，請檢查 Firebase 權限。', deleteTitle:'刪除聊天室', deleteDesc:'此聊天室與所有對話紀錄將被刪除且無法復原。確定要刪除嗎？', deleteBtn:'刪除', keepPw:'維持密碼', keepSetting:'維持目前設定', langName:'繁體中文', myIdShort:'我的 ID', roomTag:'AI 翻譯', iconTitle:'更換圖示', iconLabel:'圖示', colorLabel:'背景顏色', defaultIcon:'預設圖示', resetColor:'預設顏色', customColor:'自訂顏色', iconSaveFail:'無法儲存圖示，請檢查 Firebase 權限。', roomLoadFail:'無法載入聊天室資訊，請檢查 Firebase 連線與安全規則。', invalidLink:'聊天室連結無效。', roomNotFound:'此聊天室不存在。', renamed:'聊天室名稱已變更。', saved:'聊天室設定已儲存。', sendFail:'訊息傳送失敗，請檢查 Firebase 連線。', sentWithoutTranslation:'已僅傳送原文。', loadMore:'載入更早的對話', loadMoreFail:'無法載入先前的對話。', retryTranslate:'重新翻譯', copyTranslation:'複製翻譯', copied:'已複製', noMessages:'還沒有訊息', lockedPreview:'此聊天室已設定密碼', yesterday:'昨天', newMessage:'新訊息' },
+    ja: { edit:'編集', done:'完了', settings:'ルーム設定', remove:'ルームを削除', deleteFail:'ルームの削除に失敗しました。Firebaseの権限を確認してください。', deleteTitle:'ルームを削除', deleteDesc:'このルームとすべての会話履歴が削除され、元に戻せません。本当に削除しますか？', deleteBtn:'削除', keepPw:'パスワードを維持', keepSetting:'現在の設定を維持', langName:'日本語', myIdShort:'自分のID', roomTag:'AI翻訳', iconTitle:'アイコンを変更', iconLabel:'アイコン', colorLabel:'背景色', defaultIcon:'デフォルト', resetColor:'デフォルト色', customColor:'色を選ぶ', iconSaveFail:'アイコンを保存できませんでした。Firebaseの権限を確認してください。', roomLoadFail:'ルーム情報を読み込めませんでした。Firebaseの接続とセキュリティルールを確認してください。', invalidLink:'ルームのリンクが正しくありません。', roomNotFound:'存在しないルームです。', renamed:'ルーム名を変更しました。', saved:'ルーム設定を保存しました。', sendFail:'メッセージを送信できませんでした。Firebaseの接続を確認してください。', sentWithoutTranslation:'原文のみ送信されました。', loadMore:'以前の会話を表示', loadMoreFail:'以前の会話を読み込めませんでした。', retryTranslate:'再翻訳', copyTranslation:'翻訳をコピー', copied:'コピーしました', noMessages:'まだメッセージがありません', lockedPreview:'パスワードが設定されたルームです', yesterday:'昨日', newMessage:'新着メッセージ' },
+    en: { edit:'Edit', done:'Done', settings:'Room settings', remove:'Delete room', deleteFail:'Failed to delete the room. Please check Firebase permissions.', deleteTitle:'Delete room', deleteDesc:'This room and all its messages will be deleted and cannot be restored. Delete it?', deleteBtn:'Delete', keepPw:'Keep password', keepSetting:'Keep current setting', langName:'English', myIdShort:'My ID', roomTag:'AI Translate', iconTitle:'Change icon', iconLabel:'Icon', colorLabel:'Background color', defaultIcon:'Default icon', resetColor:'Default color', customColor:'Pick a color', iconSaveFail:'Could not save the icon. Please check Firebase permissions.', roomLoadFail:'Could not load the room. Please check your Firebase connection and rules.', invalidLink:'Invalid room link.', roomNotFound:'This room does not exist.', renamed:'Room name updated.', saved:'Room settings saved.', sendFail:'Could not send the message. Please check your Firebase connection.', sentWithoutTranslation:'Sent without translation.', loadMore:'Load earlier messages', loadMoreFail:'Could not load earlier messages.', retryTranslate:'Retry translation', copyTranslation:'Copy translation', copied:'Copied', noMessages:'No messages yet', lockedPreview:'Password-protected room', yesterday:'Yesterday', newMessage:'New message' }
+  };
+  let listEditMode = false;
+  let settingsTarget = null; // 설정 모달이 가리키는 방 (채팅 중인 방 또는 목록에서 고른 방)
 
-function formatMessageTime(timestamp) {
-  if (!timestamp) return '';
+  // 화면 언어는 탭(창)마다 따로 기억한다. 새 탭은 마지막으로 직접 고른 언어로 시작한다.
+  let uiLang = (() => { try { return sessionStorage.getItem('chatUiLanguage') || localStorage.getItem('chatUiLanguage') || 'ko'; } catch (error) { return 'ko'; } })();
+  if (!LANGS[uiLang]) uiLang = 'ko';
+  let activeRoomId = null;
+  let activeRoomMeta = null;
+  let activeRoomRef = null;
+  let messagesListener = null;
+  let allRooms = {};
+  let pendingEntryMeta = null;
+  let isSending = false;
+  let isRecording = false;
+  let isManualStop = false;
+  let recognition = null;
 
-  const settings = getMessageTimeSettings();
+  const langMap = { ko:'Korean', zh:'Traditional Chinese (Taiwan, 繁體中文)', ja:'Japanese', en:'English' };
+  const t = () => LANGS[uiLang] || LANGS.ko;
+  const xt = () => EDIT_LABELS[uiLang] || EDIT_LABELS.ko;
+  let lastDateKey = '';   // 마지막으로 그린 메시지의 날짜 (날짜 구분선용)
+  let deleteTarget = null; // 삭제 확인 창이 가리키는 방
+  let statusTimer = null;
+  const PAGE_SIZE = 50;               // 한 번에 불러오는 대화 수
+  const baseTitle = document.title;
+  let messagesQuery = null, changedListener = null;
+  let oldestKey = null, newestKey = null, hasMoreMessages = false, loadingMore = false;
+  let renderedKeys = new Set();
+  const messageStore = new Map();     // 메시지 key -> 데이터 (다시 번역할 때 사용)
+  let historyReady = false, hiddenUnread = 0;
+  const roomSummaries = {};           // 목록용: 방 id -> 마지막 메시지·안 읽은 개수
+  const roomWatchers = {};
+  let listRenderTimer = null;
+  const roomLink = id => window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(id);
+  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+  const showError = (id, message) => { const el = $(id); if (el) { el.textContent = message; el.classList.remove('hidden'); } };
+  const clearError = id => { const el = $(id); if (el) { el.textContent = ''; el.classList.add('hidden'); } };
 
-  return new Date(Number(timestamp)).toLocaleTimeString(
-    settings.locale,
-    {
-      timeZone: settings.timeZone,
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }
-  );
-}
+  function safeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
 
-function refreshMessageTimes() {
-  const settings = getMessageTimeSettings();
-  const messages = Array.from(
-    chatContainer.querySelectorAll('[data-chat-message="true"]')
-  );
+  function setUILanguage(lang) {
+    uiLang = LANGS[lang] ? lang : 'ko';
+    try { sessionStorage.setItem('chatUiLanguage', uiLang); } catch (error) {}
+    document.documentElement.lang = ({ko:'ko',zh:'zh-TW',ja:'ja',en:'en'})[uiLang];
+    const x0 = xt(), t0 = t();
+    setText('uiLanguageName', x0.langName); setText('lobbyLanguageName', x0.langName);
+    setText('lobbyLanguagePopupTitle', t0.languageTitle);
+    setText('iconModalTitle', x0.iconTitle); setText('iconGridLabel', x0.iconLabel); setText('colorGridLabel', x0.colorLabel); setText('iconCancelBtn', t0.cancel); setText('iconSaveBtn', t0.save);
+    document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
+    const tx = t();
+    setText('lobbyTitle', tx.title); setText('lobbySubtitle', tx.subtitle); setText('createRoomButtonText', tx.create); setText('roomListHeading', tx.list); setText('roomLoadingText', tx.loading); setText('uiTitle', xt().roomTag); setText('uiMyIdLabel', xt().myIdShort); setText('lobbyMyIdLabel', xt().myIdShort); setText('uiSourceLabel', tx.source); setText('uiTargetLabel', tx.target); setText('uiWelcome', tx.welcome); setText('roomListButtonText', tx.roomListButton); setText('uiLanguagePopupTitle', tx.languageTitle); setText('createModalTitle', tx.createTitle); setText('roomNameLabel', tx.roomName); setText('createPasswordLabel', tx.usePassword); setText('createPasswordHint', tx.passwordHint); setText('newRoomPasswordLabel', tx.password); setText('createRoomSubmitBtn', tx.make); setText('createRoomCancelBtn', tx.cancel); setText('entryModalTitle', tx.enterTitle); setText('entryModalDesc', tx.enterDesc); setText('entryConfirmBtn', tx.enter); setText('entryCancelBtn', tx.cancel); setText('settingsModalTitle', tx.roomSettings); setText('passwordActionLabel', tx.chooseAction); setText('currentPasswordLabel', tx.currentPassword); setText('settingsNewPasswordLabel', tx.newPassword); setText('settingsSaveBtn', tx.save); setText('settingsCancelBtn', tx.cancel); setText('uiIdLabel', tx.idLabel); setText('cancelModalBtn', tx.cancel); setText('saveUserBtn', tx.save); setText('uiModalTitle', tx.changeId);
+    els.roomSearchInput.placeholder = tx.search; els.entryPasswordInput.placeholder = tx.password; $('newRoomPasswordInput').placeholder = tx.password; $('currentPasswordInput').placeholder = tx.currentPassword; $('settingsNewPasswordInput').placeholder = tx.newPassword; $('newUserIdInput').placeholder = tx.idPlaceholder; els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder; els.micBtn.title = tx.mic; els.sendBtn.title = tx.send; $('changeUserBtn').title = tx.changeId;
+    setText('deleteModalTitle', xt().deleteTitle); setText('deleteModalDesc', xt().deleteDesc); setText('deleteConfirmBtn', xt().deleteBtn); setText('deleteCancelBtn', tx.cancel); setText('deletePasswordLabel', tx.password); $('deletePasswordInput').placeholder = tx.password;
+    const selects = [els.sourceLangSelect, els.targetLangSelect];
+    selects.forEach(select => Array.from(select.options).forEach(option => { const idx = ({ko:0,zh:1,ja:2,en:3})[option.value]; option.textContent = tx.languageNames[idx]; }));
+    setText('loadMoreText', xt().loadMore);
+    document.querySelectorAll('.retry-translate-btn span').forEach(node => { node.textContent = xt().retryTranslate; });
+    document.querySelectorAll('.copy-translation-btn').forEach(node => { node.title = xt().copyTranslation; node.setAttribute('aria-label', xt().copyTranslation); });
+    if (messagesListener) refreshMessageTimes();
+    renderRoomList();
+  }
 
-  // 기존 날짜 구분선을 제거하고 현재 언어 기준으로 다시 생성
-  chatContainer.querySelectorAll('.message-date-separator')
-    .forEach(element => element.remove());
+  function openModal(el) { el.classList.remove('hidden'); }
+  function closeModal(el) { el.classList.add('hidden'); }
 
-  let previousDateKey = '';
 
-  messages.forEach(message => {
-    const timestamp = Number(message.dataset.messageTimestamp);
-
-    if (!timestamp) return;
-
-    const date = new Date(timestamp);
-
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: settings.timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).formatToParts(date);
-
-    const dateParts = {};
-    parts.forEach(part => {
-      dateParts[part.type] = part.value;
+  // ---- 채팅방 목록: 마지막 메시지 · 시간 · 안 읽은 개수 ----
+  const lastReadStorageKey = id => 'lastRead:' + (isLocal ? 'local:' : 'prod:') + id;
+  function readLastRead(id) { try { return localStorage.getItem(lastReadStorageKey(id)); } catch (error) { return null; } }
+  function writeLastRead(id, key) { try { localStorage.setItem(lastReadStorageKey(id), key); } catch (error) {} }
+  function scheduleRoomListRender() {
+    clearTimeout(listRenderTimer);
+    listRenderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); }, 30);
+  }
+  function updateLobbyTitle() {
+    if (activeRoomId) return;
+    const total = Object.keys(allRooms).reduce((sum, id) => sum + ((roomSummaries[id] && roomSummaries[id].unread) || 0), 0);
+    document.title = total > 0 ? '(' + (total > 99 ? '99+' : total) + ') ' + baseTitle : baseTitle;
+  }
+  function syncRoomWatchers() {
+    const ids = Object.keys(allRooms).filter(id => allRooms[id] && allRooms[id].name);
+    ids.forEach(id => { if (!roomWatchers[id]) attachRoomWatcher(id); });
+    Object.keys(roomWatchers).forEach(id => {
+      if (ids.includes(id)) return;
+      roomWatchers[id].query.off('value', roomWatchers[id].handler);
+      delete roomWatchers[id]; delete roomSummaries[id];
     });
-
-    const dateKey =
-      `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
-
-    // 메시지 시간 갱신
-    const timeLabel = message.querySelector('[data-message-timestamp]');
-    if (timeLabel) {
-      timeLabel.textContent = formatMessageTime(timestamp);
+  }
+  function attachRoomWatcher(id) {
+    // 방마다 '마지막 메시지 1개'만 지켜본다. (대화 전체를 받지 않는다)
+    const query = database.ref(dataPrefix + 'roomLog/' + id).orderByKey().limitToLast(1);
+    const handler = snapshot => {
+      let last = null;
+      snapshot.forEach(child => { last = Object.assign({ key: child.key }, child.val() || {}); });
+      onLatestMessage(id, last);
+    };
+    query.on('value', handler, error => console.warn('Room watcher error:', id, error));
+    roomWatchers[id] = { query, handler };
+  }
+  async function onLatestMessage(id, last) {
+    if (!last) { roomSummaries[id] = { loaded: true, unread: 0 }; scheduleRoomListRender(); return; }
+    const previous = roomSummaries[id];
+    roomSummaries[id] = { loaded: true, key: last.key, sender: last.sender, text: last.text, timestamp: last.timestamp, unread: previous ? previous.unread : 0 };
+    scheduleRoomListRender();
+    const lastRead = readLastRead(id);
+    let unread = 0;
+    if (!lastRead) {
+      writeLastRead(id, last.key); // 처음 보는 방은 지금까지의 메시지를 읽은 것으로 본다
+    } else if (lastRead < last.key) {
+      try {
+        const snap = await database.ref(dataPrefix + 'roomLog/' + id).orderByKey().startAt(lastRead).limitToFirst(101).once('value');
+        snap.forEach(child => { if (child.key !== lastRead && (child.val() || {}).sender !== myUserId) unread++; });
+      } catch (error) { console.warn('Unread count failed:', id, error); }
     }
+    if (roomSummaries[id] && roomSummaries[id].key === last.key) { roomSummaries[id].unread = unread; scheduleRoomListRender(); }
+  }
+  function formatListTime(timestamp) {
+    const s = timeSettings(), now = Date.now();
+    const key = dateKeyOf(timestamp, s), today = dateKeyOf(now, s), yesterday = dateKeyOf(now - 86400000, s);
+    if (key === today) return formatMessageTime(timestamp);
+    if (key === yesterday) return xt().yesterday;
+    const sameYear = key.slice(0, 4) === today.slice(0, 4);
+    return new Date(timestamp).toLocaleDateString(s.locale, sameYear ? { timeZone: s.zone, month: 'long', day: 'numeric' } : { timeZone: s.zone, year: 'numeric', month: 'numeric', day: 'numeric' });
+  }
 
-    // 날짜가 바뀐 첫 메시지 앞에만 날짜 구분선 삽입
-    if (dateKey !== previousDateKey) {
-      const separator = document.createElement('div');
-      separator.className =
-        'message-date-separator flex justify-center my-4 w-full';
+  const isHexColor = value => /^#[0-9a-fA-F]{6}$/.test(String(value || ''));
+  function roomIconHtml(room) {
+    const hasColor = isHexColor(room.color);
+    const inner = room.icon
+      ? '<span class="text-2xl leading-none">' + safeHtml(String(room.icon).slice(0, 16)) + '</span>'
+      : '<i class="fa-solid fa-comments"></i>';
+    return '<span class="w-12 h-12 rounded-xl' + (hasColor ? '' : ' bg-indigo-50 text-indigo-600') + ' flex items-center justify-center text-lg shrink-0"' + (hasColor ? ' style="background:' + room.color + '"' : '') + '>' + inner + '</span>';
+  }
 
-      const dateLabel = document.createElement('span');
-      dateLabel.className =
-        'bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full';
-
-      dateLabel.textContent = date.toLocaleDateString(
-        settings.locale,
-        {
-          timeZone: settings.timeZone,
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          weekday: 'long'
-        }
-      );
-
-      separator.appendChild(dateLabel);
-      chatContainer.insertBefore(separator, message);
-
-      previousDateKey = dateKey;
+  function renderRoomList() {
+    if (!els.roomList) return;
+    const tx = t();
+    const labels = EDIT_LABELS[uiLang] || EDIT_LABELS.ko;
+    setText('roomEditToggleText', listEditMode ? labels.done : labels.edit);
+    $('roomEditToggleIcon').className = 'fa-solid ' + (listEditMode ? 'fa-check' : 'fa-pen') + ' mr-1';
+    const query = (els.roomSearchInput.value || '').trim().toLocaleLowerCase();
+    let rows = Object.values(allRooms).filter(room => room && room.id && room.name && room.id !== '__meta' && !(isLocal && room.id === 'testroom' && room.legacy));
+    // 카카오톡처럼 최근에 대화가 있었던 방이 위로 온다. (대화가 없으면 만든 시각 기준)
+    const activityOf = room => Number((roomSummaries[room.id] && roomSummaries[room.id].timestamp) || room.createdAt || 0);
+    rows.sort((a, b) => activityOf(b) - activityOf(a));
+    if (query) rows = rows.filter(room => String(room.name).toLocaleLowerCase().includes(query) || String(room.id).toLocaleLowerCase().includes(query));
+    setText('roomCountLabel', String(rows.length));
+    if (!rows.length) {
+      els.roomList.innerHTML = `<div class="text-center text-sm text-slate-400 py-10"><i class="fa-regular fa-comments text-2xl mb-3 block"></i>${safeHtml(query ? tx.noSearchResults : tx.noRooms)}</div>`;
+      return;
     }
-  });
-}
+    els.roomList.innerHTML = rows.map(room => {
+      const locked = !!room.password;
+      const roomName = safeHtml(room.name || room.id);
+      const id = safeHtml(room.id);
+      const el = xt();
+      const summary = roomSummaries[room.id];
+      const unread = summary ? (summary.unread || 0) : 0;
+      // 비밀번호가 있는 방은 마지막 메시지를 보여주지 않는다.
+      const previewText = locked ? el.lockedPreview : (summary && summary.loaded ? (summary.text ? String(summary.text).replace(/\s+/g, ' ').trim() : el.noMessages) : '');
+      const timeLabel = summary && summary.timestamp ? formatListTime(summary.timestamp) : '';
+      const badge = unread > 0 ? `<span class="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">${unread > 99 ? '99+' : unread}</span>` : '';
+      return `<div class="room-card bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-indigo-300 hover:shadow-sm transition-all" data-room-id="${id}">
+        ${listEditMode ? `<button type="button" class="edit-icon-btn relative shrink-0 rounded-xl hover:opacity-80" data-room-id="${id}" aria-label="${el.iconTitle}" title="${el.iconTitle}">${roomIconHtml(room)}<span class="absolute -right-1 -bottom-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center shadow"><i class="fa-solid fa-pen"></i></span></button>` : ''}
+        <button class="open-room-btn flex items-center gap-3 flex-1 min-w-0 text-left" data-room-id="${id}">
+          ${listEditMode ? '' : roomIconHtml(room)}
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1.5 min-w-0"><span class="font-semibold text-slate-800 text-sm truncate">${roomName}</span><i class="fa-solid ${locked ? 'fa-lock text-slate-400' : 'fa-lock-open text-slate-300'} text-[11px] shrink-0"></i></span>
+            <span class="room-preview block text-xs ${unread > 0 ? 'text-slate-800 font-medium' : 'text-slate-500'} truncate mt-0.5">${safeHtml(previewText)}</span>
+          </span>
+          ${listEditMode ? '' : `<span class="flex flex-col items-end justify-between self-stretch gap-1 shrink-0 min-h-[2.5rem]"><span class="room-time text-[11px] text-slate-400 whitespace-nowrap">${safeHtml(timeLabel)}</span>${badge}</span>`}
+        </button>
+        ${listEditMode ? `<button class="settings-room-btn w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0" data-room-id="${id}" aria-label="${el.settings}" title="${el.settings}"><i class="fa-solid fa-gear"></i></button>
+        <button class="delete-room-btn w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 shrink-0" data-room-id="${id}" aria-label="${el.remove}" title="${el.remove}"><i class="fa-solid fa-trash"></i></button>` : ''}
+      </div>`;
+    }).join('');
+  }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.innerText = text;
-      return div.innerHTML;
-    }
-
-    // 음성 인식 설정
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      function updateSTTLanguage() {
-        const langCode = sourceLangSelect.value;
-        if (langCode === 'ko') recognition.lang = 'ko-KR';
-        else if (langCode === 'zh') recognition.lang = 'zh-TW';
-        else if (langCode === 'ja') recognition.lang = 'ja-JP';
-        else if (langCode === 'en') recognition.lang = 'en-US';
+  async function copyRoomLogs(sourcePath, destinationPath) {
+    // 원본은 삭제하지 않는다. roomLog에 같은 방 기록이 이미 있으면 덮어쓰지 않는다.
+    const sourceSnapshot = await database.ref(sourcePath).once('value');
+    if (!sourceSnapshot.exists()) return;
+    const rooms = sourceSnapshot.val() || {};
+    for (const roomId of Object.keys(rooms)) {
+      const sourceRoom = rooms[roomId];
+      if (roomId === '__meta' || sourceRoom == null) continue;
+      const destinationRef = database.ref(destinationPath + '/' + roomId);
+      const destinationSnapshot = await destinationRef.once('value');
+      if (!destinationSnapshot.exists()) {
+        await destinationRef.set(sourceRoom);
       }
-
-      let isRecording = false;
-      let isManualStop = false;
-
-      micBtn.onclick = () => {
-        if (!isRecording) {
-          isManualStop = false;
-          updateSTTLanguage();
-          try {
-            recognition.start();
-          } catch (e) {
-            console.warn("STT Start Error:", e);
-          }
-        } else {
-          isManualStop = true;
-          isRecording = false;
-          try {
-            recognition.stop();
-            recognition.abort();
-          } catch (e) {
-            console.warn("STT Stop Error:", e);
-          }
-          stopRecordingUI();
-        }
-      };
-
-      function stopRecordingUI() {
-        micBtn.classList.remove('recording-active');
-        micIcon.className = 'fa-solid fa-microphone';
-        textInput.placeholder =
-  uiTranslations[uiLanguageSelect.value].inputPlaceholder;
-        typingRef.child(myUserId).remove();
-      }
-
-      recognition.onstart = () => {
-        isRecording = true;
-        micBtn.classList.add('recording-active');
-        micIcon.className = 'fa-solid fa-square';
-        textInput.placeholder =
-  uiTranslations[uiLanguageSelect.value].listening;
-        typingRef.child(myUserId).set(true);
-      };
-
-      recognition.onend = () => {
-        if (!isManualStop && isRecording) {
-          try {
-            recognition.start();
-          } catch (e) {
-            isRecording = false;
-            stopRecordingUI();
-          }
-        } else {
-          isRecording = false;
-          stopRecordingUI();
-        }
-      };
-
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-        }
-
-        if (finalTranscript.trim()) {
-          const currentVal = textInput.value;
-          textInput.value = currentVal
-  ? (currentVal + ' ' + finalTranscript.trim())
-  : finalTranscript.trim();
-
-resizeTextInput();        }
-      };
-
-      recognition.onerror = (event) => {
-        console.warn("Speech Recognition Event Error:", event.error);
-        if (!isManualStop && (event.error === 'no-speech' || event.error === 'network')) {
-          try {
-            recognition.start();
-          } catch(e) {}
-        } else if (isManualStop || event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          isRecording = false;
-          stopRecordingUI();
-        }
-      };
-
-    } else {
-      micBtn.disabled = true;
-      micBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      micBtn.title = "현재 브라우저는 음성 인식을 지원하지 않습니다.";
     }
-    // ===== 화면 언어 설정 및 다국어 사전 =====
-    const uiTranslations = {
-  ko: {
-    myId: '내 ID',
-    title: 'AI 번역 채팅방',
-    uiLanguage: '화면 언어:',
-    source: '입력:',
-    target: '번역:',
-    languages: ['한국어', '대만어 (繁體中文)', '일본어 (日本語)', '영어 (English)'],
-    welcome: '채팅방에 연결되었습니다. 대화를 시작하세요!',
-    changeId: '사용자 ID 설정',
-    idLabel: '새로 사용할 ID를 입력하세요',
-    idPlaceholder: '예: 홍길동, Alex...',
-    cancel: '취소',
-    save: '저장하기',
-    mic: '음성 입력',
-    send: '전송',
-    inputPlaceholder: '메시지를 입력하거나 마이크 버튼을 누르세요...',
-    listening: '음성을 듣고 받아적는 중입니다...',
-    translating: 'AI 번역 중...',
-    processing: '번역 처리 중...',
-    me: '나',
-    unsupported: '현재 브라우저는 음성 인식을 지원하지 않습니다.',
-    // 추가된 번역 실패 문구
-    failNotFound: '⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.',
-    failLimit: '⚠️ 번역 실패: API 사용량 한도 초과. 잠시 후 다시 시도해 주세요.',
-    failServer: '⚠️ 번역 실패: AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
-    failTimeout: '⚠️ 번역 실패: AI 응답 시간 초과. 잠시 후 다시 시도해 주세요.',
-    failConnection: '⚠️ 번역 실패: 서버 연결을 확인해 주세요.',
-    failEmpty: '⚠️ 번역 실패: 번역 결과를 받지 못했습니다.',
-    failDefault: '⚠️ 번역 실패: '
-  },
-  zh: {
-    myId: '我的 ID：',
-    title: 'AI 翻譯聊天室',
-    uiLanguage: '介面語言：',
-    source: '輸入：',
-    target: '翻譯：',
-    languages: ['韓語', '台灣中文（繁體）', '日語', '英語'],
-    welcome: '已連線至聊天室，開始聊天吧！',
-    changeId: '設定使用者 ID',
-    idLabel: '請輸入要使用的 ID',
-    idPlaceholder: '例如：小明、Alex...',
-    cancel: '取消',
-    save: '儲存',
-    mic: '語音輸入',
-    send: '傳送',
-    inputPlaceholder: '輸入訊息或點擊麥克風按鈕...',
-    listening: '正在聆聽並辨識語音...',
-    translating: 'AI 翻譯中...',
-    processing: '正在處理翻譯...',
-    me: '我',
-    unsupported: '目前的瀏覽器不支援語音辨識。',
-    // 繁體中文 失敗 문구
-    failNotFound: '⚠️ 翻譯失敗：找不到翻譯伺服器。',
-    failLimit: '⚠️ 翻譯失敗：API 使用量已達上限，請稍後再試。',
-    failServer: '⚠️ 翻譯失敗：AI 伺服器繁忙，請稍後再試。',
-    failTimeout: '⚠️ 翻譯失敗：AI 回應逾時，請稍後再試。',
-    failConnection: '⚠️ 翻譯失敗：請檢查伺服器連線。',
-    failEmpty: '⚠️ 翻譯失敗：未收到翻譯結果。',
-    failDefault: '⚠️ 翻譯失敗：'
-  },
-  ja: {
-    myId: '自分のID：',
-    title: 'AI翻訳チャットルーム',
-    uiLanguage: '表示言語：',
-    source: '入力：',
-    target: '翻訳：',
-    languages: ['韓国語', '台湾中国語（繁体字）', '日本語', '英語'],
-    welcome: 'チャットルームに接続しました。会話を始めましょう！',
-    changeId: 'ユーザーID設定',
-    idLabel: '使用するIDを入力してください',
-    idPlaceholder: '例：太郎、Alex...',
-    cancel: 'キャンセル',
-    save: '保存',
-    mic: '音声入力',
-    send: '送信',
-    inputPlaceholder: 'メッセージを入力するか、マイクを押してください...',
-    listening: '音声を認識しています...',
-    translating: 'AI翻訳中...',
-    processing: '翻訳を処理しています...',
-    me: '自分',
-    unsupported: 'このブラウザは音声認識に対応していません。',
-    // 日本語 失敗 문구
-    failNotFound: '⚠️ 翻訳失敗：翻訳サーバーが見つかりません。',
-    failLimit: '⚠️ 翻訳失敗：APIの使用量制限を超えました。しばらくしてからもう一度お試しください。',
-    failServer: '⚠️ 翻訳失敗：AIサーバーが混雑しています。しばらくしてからもう一度お試しください。',
-    failTimeout: '⚠️ 翻訳失敗：AIの応答がタイムアウトしました。しばらくしてからもう一度お試しください。',
-    failConnection: '⚠️ 翻訳失敗：サーバーの接続をご確認ください。',
-    failEmpty: '⚠️ 翻訳失敗：翻訳結果を取得できませんでした。',
-    failDefault: '⚠️ 翻訳失敗：'
-  },
-  en: {
-    myId: 'My ID:',
-    title: 'AI Translation Chat',
-    uiLanguage: 'Display language:',
-    source: 'Input:',
-    target: 'Translate:',
-    languages: ['Korean', 'Traditional Chinese (Taiwan)', 'Japanese', 'English'],
-    welcome: 'Connected to the chat room. Start a conversation!',
-    changeId: 'User ID Settings',
-    idLabel: 'Enter the ID you want to use',
-    idPlaceholder: 'e.g. Alex, John...',
-    cancel: 'Cancel',
-    save: 'Save',
-    mic: 'Voice input',
-    send: 'Send',
-    inputPlaceholder: 'Type a message or tap the microphone...',
-    listening: 'Listening to your voice...',
-    translating: 'AI translating...',
-    processing: 'Translation in progress...',
-    me: 'Me',
-    unsupported: 'Speech recognition is not supported by this browser.',
-    // English 失敗 문구
-    failNotFound: '⚠️ Translation failed: Translation server not found.',
-    failLimit: '⚠️ Translation failed: API usage limit exceeded. Please try again later.',
-    failServer: '⚠️ Translation failed: AI server is busy. Please try again later.',
-    failTimeout: '⚠️ Translation failed: AI response timed out. Please try again later.',
-    failConnection: '⚠️ Translation failed: Please check your server connection.',
-    failEmpty: '⚠️ Translation failed: No translation result received.',
-    failDefault: '⚠️ Translation failed: '
   }
-};
 
-const uiLanguageSelect = document.getElementById('uiLanguageSelect');
+  async function ensureLegacyRoom() {
+    // 로컬 데이터와 배포 데이터는 서로 섞지 않는다.
+    if (isLocal) {
+      // 과거 로컬 저장 경로 local/rooms 전체를 local/roomLog로 복사한다.
+      await copyRoomLogs('local/rooms', 'local/roomLog');
+      // 초기 버전에서 devroom을 루트 rooms에 저장했던 경우만 로컬 경로로 복사한다.
+      const oldRoomId = 'devroom';
+      const oldMetaRef = database.ref('roomDirectory/' + oldRoomId);
+      const newMetaRef = directoryRef.child(oldRoomId);
+      const [oldMetaSnap, newMetaSnap] = await Promise.all([oldMetaRef.once('value'), newMetaRef.once('value')]);
+      if (oldMetaSnap.exists() && !newMetaSnap.exists()) await newMetaRef.set(oldMetaSnap.val());
+      const oldMessagesRef = database.ref('rooms/' + oldRoomId);
+      const newMessagesRef = database.ref('local/roomLog/' + oldRoomId);
+      const [oldMessagesSnap, newMessagesSnap] = await Promise.all([oldMessagesRef.once('value'), newMessagesRef.once('value')]);
+      if (oldMessagesSnap.exists() && !newMessagesSnap.exists()) await newMessagesRef.set(oldMessagesSnap.val());
+      return;
+    }
 
-function applyUILanguage() {
-  const lang = uiLanguageSelect.value;
-  const t = uiTranslations[lang] || uiTranslations.ko;
-  refreshMessageTimes();
+    // 배포 환경의 기존 rooms 전체 기록을 roomLog로 복사한다. 기존 rooms는 안전을 위해 유지한다.
+    await copyRoomLogs('rooms', 'roomLog');
+    const legacyRef = directoryRef.child('testroom');
+    const snapshot = await legacyRef.once('value');
+    if (!snapshot.exists()) {
+      await legacyRef.set({ id: 'testroom', name: 'testroom', password: null, createdAt: 1, legacy: true, initialNoPasswordApplied: true });
+    } else if (!snapshot.val().initialNoPasswordApplied) {
+      await legacyRef.update({
+        id: snapshot.val().id || 'testroom',
+        name: snapshot.val().name || 'testroom',
+        password: null,
+        legacy: true,
+        initialNoPasswordApplied: true
+      });
+    }
+  }
 
-  document.documentElement.lang =
-    lang === 'zh' ? 'zh-TW' : lang;
+  async function loadRoomList() {
+    try {
+      // 옛 데이터 이전은 이 기기에서 한 번만 실행한다. 실패해도 목록 표시는 계속한다.
+      const migrationKey = 'legacyMigrationDone:' + (isLocal ? 'local' : 'prod');
+      if (!localStorage.getItem(migrationKey)) {
+        try { await ensureLegacyRoom(); localStorage.setItem(migrationKey, '1'); }
+        catch (migrationError) { console.error('Legacy migration failed:', migrationError); }
+      }
+      directoryRef.on('value', snapshot => {
+        allRooms = snapshot.val() || {};
+        syncRoomWatchers();
+        renderRoomList();
+        updateLobbyTitle();
+      }, error => {
+        els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`;
+      });
+    } catch (error) {
+      els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`;
+    }
+  }
 
-  document.getElementById('uiMyIdLabel').textContent = t.myId;  
-  document.getElementById('uiTitle').textContent = t.title;
-  
-const uiLanguageLabel = document.getElementById('uiLanguageLabel');
-if (uiLanguageLabel) uiLanguageLabel.textContent = t.uiLanguage;
+  function leaveToLobby() {
+    window.location.href = window.location.pathname;
+  }
 
-  document.getElementById('uiSourceLabel').textContent = t.source;
-  document.getElementById('uiTargetLabel').textContent = t.target;
-  document.getElementById('uiWelcome').textContent = t.welcome;
+  function showEntryPrompt(meta) {
+    pendingEntryMeta = meta;
+    els.entryPasswordInput.value = '';
+    clearError('entryError');
+    setText('entryModalTitle', t().enterTitle + ': ' + (meta.name || meta.id));
+    openModal(els.entryModal);
+    setTimeout(() => els.entryPasswordInput.focus(), 80);
+  }
 
-  // 언어 선택 메뉴의 항목 이름 변경
-  Array.from(sourceLangSelect.options).forEach((option, i) => {
-    option.textContent = t.languages[i];
+  async function enterRoom(meta) {
+    activeRoomId = meta.id;
+    activeRoomMeta = meta;
+    // 新しい保存先は roomLog。旧 rooms に履歴がある場合は、移行先が空のときだけコピーして履歴を維持する。
+    const newLogPath = dataPrefix + 'roomLog/' + activeRoomId;
+    const legacyLogPath = (isLocal && activeRoomId === 'devroom') ? 'rooms/' + activeRoomId : dataPrefix + 'rooms/' + activeRoomId;
+    const newLogSnapshot = await database.ref(newLogPath).once('value');
+    if (!newLogSnapshot.exists()) {
+      const legacyLogSnapshot = await database.ref(legacyLogPath).once('value');
+      if (legacyLogSnapshot.exists()) await database.ref(newLogPath).set(legacyLogSnapshot.val());
+    }
+    activeRoomRef = database.ref(newLogPath);
+    $('currentRoomName').textContent = meta.name || meta.id;
+    els.lobbyScreen.classList.add('hidden');
+    els.chatApp.classList.remove('hidden');
+    closeModal(els.entryModal);
+    els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
+    lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
+    oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
+    if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); }
+    // 처음에는 최근 PAGE_SIZE개만 불러온다. 이전 대화는 '더보기'를 누를 때 가져온다.
+    messagesQuery = activeRoomRef.orderByKey().limitToLast(PAGE_SIZE);
+    messagesListener = snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
+      renderMessage(data, snapshot.key, { live: historyReady });
+    };
+    changedListener = snapshot => { const data = snapshot.val(); if (data) updateMessageElement(snapshot.key, data); };
+    messagesQuery.on('child_added', messagesListener, error => console.error('Message listener error:', error));
+    messagesQuery.on('child_changed', changedListener);
+    setUILanguage(uiLang);
+    try {
+      const initial = await messagesQuery.once('value');
+      hasMoreMessages = initial.numChildren() >= PAGE_SIZE;
+    } catch (error) { console.error('Initial load failed:', error); }
+    historyReady = true;
+    updateLoadMoreButton(); maybeMarkRead(); scrollChatToBottom();
+  }
+
+  async function routeIntoRequestedRoom() {
+    const roomId = requestedRoomId;
+    if (!roomId) {
+      els.lobbyScreen.classList.remove('hidden');
+      els.chatApp.classList.add('hidden');
+      await loadRoomList();
+      return;
+    }
+    // Firebase keys cannot contain these characters. Existing room IDs normally do not contain them.
+    if (/[.#$\[\]\/]/.test(roomId)) {
+      alert(xt().invalidLink);
+      leaveToLobby();
+      return;
+    }
+    try {
+      const snapshot = await directoryRef.child(roomId).once('value');
+      if (!snapshot.exists()) {
+        // 없는 방 주소로 들어오면 방을 만들지 않고 목록으로 돌려보낸다.
+        alert(xt().roomNotFound);
+        leaveToLobby();
+        return;
+      }
+      const meta = snapshot.val();
+      if (!meta.password) {
+        await enterRoom(meta);
+        return;
+      }
+      // 비밀번호가 설정된 방은 URL로 바로 접근해도 항상 비밀번호 입력을 요구한다.
+      els.lobbyScreen.classList.add('hidden');
+      els.chatApp.classList.add('hidden');
+      showEntryPrompt(meta);
+    } catch (error) {
+      alert(xt().roomLoadFail);
+      console.error(error);
+      leaveToLobby();
+    }
+  }
+
+  $('entryConfirmBtn').addEventListener('click', async () => {
+    if (!pendingEntryMeta) return;
+    const password = els.entryPasswordInput.value;
+    if (!password) { showError('entryError', t().needPassword); return; }
+    const btn = $('entryConfirmBtn'); btn.disabled = true;
+    try {
+      const snapshot = await directoryRef.child(pendingEntryMeta.id).once('value');
+      const latestMeta = snapshot.val();
+      if (!latestMeta) {
+        leaveToLobby();
+      } else if (!latestMeta.password) {
+        await enterRoom(latestMeta);
+      } else if (password === latestMeta.password) {
+        await enterRoom(latestMeta);
+      } else {
+        showError('entryError', t().wrongPassword);
+        els.entryPasswordInput.select();
+      }
+    } catch (error) {
+      showError('entryError', error.message || t().wrongPassword);
+    } finally { btn.disabled = false; }
+  });
+  els.entryPasswordInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('entryConfirmBtn').click(); });
+  $('entryCancelBtn').addEventListener('click', leaveToLobby);
+
+  $('createRoomOpenBtn').addEventListener('click', () => {
+    $('roomNameInput').value = ''; $('createPasswordToggle').checked = false; $('newRoomPasswordInput').value = ''; $('createPasswordFields').classList.add('hidden'); clearError('createRoomError'); openModal(els.createRoomModal); setTimeout(() => $('roomNameInput').focus(), 50);
+  });
+  $('createModalCloseBtn').addEventListener('click', () => closeModal(els.createRoomModal));
+  $('createRoomCancelBtn').addEventListener('click', () => closeModal(els.createRoomModal));
+  $('createPasswordToggle').addEventListener('change', () => $('createPasswordFields').classList.toggle('hidden', !$('createPasswordToggle').checked));
+  $('createRoomSubmitBtn').addEventListener('click', async () => {
+    const name = $('roomNameInput').value.trim();
+    const password = $('newRoomPasswordInput').value;
+    clearError('createRoomError');
+    if (!name) { showError('createRoomError', t().roomNameRequired); return; }
+    if (name.length > 40) { showError('createRoomError', t().roomNameTooLong); return; }
+    if ($('createPasswordToggle').checked && !password) { showError('createRoomError', t().passwordRequired); return; }
+    const btn = $('createRoomSubmitBtn'); btn.disabled = true;
+    try {
+      const id = 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      const roomPassword = $('createPasswordToggle').checked ? password : null;
+      const meta = { id, name, password: roomPassword, createdAt: Date.now() };
+      await directoryRef.child(id).set(meta);
+      closeModal(els.createRoomModal);
+      window.location.href = window.location.pathname + '?room=' + encodeURIComponent(id);
+    } catch (error) {
+      showError('createRoomError', error.message || 'Error');
+    } finally { btn.disabled = false; }
   });
 
- Array.from(targetLangSelect.options).forEach((option) => {
-  const index = {
-    ko: 0,
-    zh: 1,
-    ja: 2,
-    en: 3
-  }[option.value];
-
-  option.textContent = t.languages[index];
-});
-
-  // 사용자 ID 팝업
-  document.getElementById('uiModalTitle').innerHTML =
-    '<i class="fa-solid fa-user-gear text-indigo-600"></i> ' + t.changeId;
-
-  document.getElementById('uiIdLabel').textContent = t.idLabel;
-  newUserIdInput.placeholder = t.idPlaceholder;
-  cancelModalBtn.textContent = t.cancel;
-  saveUserBtn.textContent = t.save;
-
-  // 입력창과 버튼 안내
-  textInput.placeholder = t.inputPlaceholder;
-  micBtn.title = t.mic;
-  sendBtn.title = t.send;
-  changeUserBtn.title = t.changeId;
-  closeModalBtn.title = t.cancel;
-
-  // 음성 인식 미지원 안내
-  if (!SpeechRecognition) {
-    micBtn.title = t.unsupported;
+  function updatePasswordSettingsFields() {
+    const enabled = !!(settingsTarget && settingsTarget.password);
+    const action = $('passwordActionSelect').value;
+    $('currentPasswordFields').classList.toggle('hidden', action === 'enable' || action === 'keep' || !enabled);
+    $('settingsNewPasswordFields').classList.toggle('hidden', action === 'disable' || action === 'keep');
+    if (action === 'enable' || action === 'keep') $('currentPasswordFields').classList.add('hidden');
   }
-
-  // 이미 표시 중인 상태 문구도 변경
-  if (!statusNotice.classList.contains('hidden')) {
-    const currentStatus = statusText.textContent;
-    statusText.textContent =
-      currentStatus === 'AI 번역 중...' ? t.translating : t.processing;
+  function openRoomSettings(meta) {
+    if (!meta) return;
+    settingsTarget = meta;
+    $('settingsRoomNameInput').value = settingsTarget.name || settingsTarget.id;
+    setText('settingsPasswordStatus', settingsTarget.password ? t().passwordOn : t().passwordOff);
+    const select = $('passwordActionSelect');
+    select.innerHTML = settingsTarget.password
+      ? `<option value="keep">${safeHtml(xt().keepPw)}</option><option value="disable">${safeHtml(t().disable)}</option><option value="change">${safeHtml(t().change)}</option>`
+      : `<option value="keep">${safeHtml(xt().keepSetting)}</option><option value="enable">${safeHtml(t().enable)}</option>`;
+    $('currentPasswordInput').value = ''; $('settingsNewPasswordInput').value = ''; clearError('settingsError'); updatePasswordSettingsFields(); openModal(els.roomSettingsModal);
   }
-
-  // 선택한 화면 언어 저장
-  try {
-    localStorage.setItem('chatUiLanguage', lang);
-  } catch (e) {
-    // 저장할 수 없는 환경에서는 현재 선택만 적용
-  }
-}
-
-// 이전에 선택한 화면 언어 복원
-try {
-  const savedLanguage = localStorage.getItem('chatUiLanguage');
-  if (savedLanguage && uiTranslations[savedLanguage]) {
-    uiLanguageSelect.value = savedLanguage;
-  }
-} catch (e) {}
-
-uiLanguageSelect.addEventListener('change', applyUILanguage);
-
-const uiLanguageButton = document.getElementById('uiLanguageButton');
-const uiLanguagePopup = document.getElementById('uiLanguagePopup');
-const uiLanguagePopupTitle = document.getElementById('uiLanguagePopupTitle');
-
-const uiLanguagePopupLabels = {
-  ko: { button: '🌐 한국어 ▼', title: '화면 언어 선택' },
-  zh: { button: '🌐 繁體中文 ▼', title: '選擇介面語言' },
-  ja: { button: '🌐 日本語 ▼', title: '画面言語を選択' },
-  en: { button: '🌐 English ▼', title: 'Select interface language' }
-};
-
-uiLanguageButton.addEventListener('click', function() {
-  console.log('언어 버튼 클릭됨');
-  uiLanguagePopup.classList.toggle('hidden');
-  console.log('팝업 클래스:', uiLanguagePopup.className);
-});
-
-document.querySelectorAll('.ui-language-option').forEach(button => {
-  button.addEventListener('click', () => {
-    uiLanguageSelect.value = button.dataset.uiLang;
-    applyUILanguage();
-    uiLanguagePopup.classList.add('hidden');
+  $('roomSettingsBtn').addEventListener('click', () => openRoomSettings(activeRoomMeta));
+  $('passwordActionSelect').addEventListener('change', updatePasswordSettingsFields);
+  $('settingsModalCloseBtn').addEventListener('click', () => closeModal(els.roomSettingsModal));
+  $('settingsCancelBtn').addEventListener('click', () => closeModal(els.roomSettingsModal));
+  $('settingsSaveBtn').addEventListener('click', async () => {
+    if (!settingsTarget) return;
+    const action = $('passwordActionSelect').value;
+    const currentPassword = $('currentPasswordInput').value;
+    const newPassword = $('settingsNewPasswordInput').value;
+    const newRoomName = $('settingsRoomNameInput').value.trim();
+    const nameChanged = newRoomName !== (settingsTarget.name || settingsTarget.id);
+    clearError('settingsError');
+    if (!newRoomName) { showError('settingsError', t().roomNameRequired); return; }
+    if (newRoomName.length > 40) { showError('settingsError', t().roomNameTooLong); return; }
+    const passwordActionNeeded = action !== 'keep';
+    if (passwordActionNeeded && (action === 'disable' || action === 'change') && !currentPassword) { showError('settingsError', t().needCurrent); return; }
+    if (passwordActionNeeded && (action === 'enable' || action === 'change') && !newPassword) { showError('settingsError', t().passwordRequired); return; }
+    const btn = $('settingsSaveBtn'); btn.disabled = true;
+    try {
+      const metaRef = directoryRef.child(settingsTarget.id);
+      const snapshot = await metaRef.once('value');
+      const latest = snapshot.val();
+      if (!latest) throw new Error('Room not found');
+      if (passwordActionNeeded && (action === 'disable' || action === 'change') && currentPassword !== latest.password) {
+        showError('settingsError', t().wrongCurrent); return;
+      }
+      let nextPassword = latest.password || null;
+      if (passwordActionNeeded && (action === 'enable' || action === 'change')) nextPassword = newPassword;
+      if (passwordActionNeeded && action === 'disable') nextPassword = null;
+      const updates = {};
+      if (nameChanged) updates.name = newRoomName;
+      if (passwordActionNeeded) { updates.password = nextPassword; }
+      if (Object.keys(updates).length) await metaRef.update(updates);
+      settingsTarget = { ...latest, ...updates };
+      if (settingsTarget.id === activeRoomId) {
+        activeRoomMeta = settingsTarget;
+        $('currentRoomName').textContent = activeRoomMeta.name || activeRoomId;
+      }
+      setText('settingsPasswordStatus', nextPassword ? t().passwordOn : t().passwordOff);
+      closeModal(els.roomSettingsModal);
+      alert(nameChanged && !passwordActionNeeded ? xt().renamed : xt().saved);
+    } catch (error) {
+      showError('settingsError', error.message || 'Error');
+    } finally { btn.disabled = false; }
   });
-});
 
-// 기존 언어 변경 함수에 팝업 버튼 번역 연결
-const previousApplyUILanguage = applyUILanguage;
+  els.roomList.addEventListener('click', async event => {
+    const iconBtn = event.target.closest('.edit-icon-btn');
+    if (iconBtn) { openIconPicker(allRooms[iconBtn.dataset.roomId]); return; }
+    const deleteBtn = event.target.closest('.delete-room-btn');
+    const settingsBtn = event.target.closest('.settings-room-btn');
+    const openBtn = event.target.closest('.open-room-btn');
+    if (settingsBtn) {
+      openRoomSettings(allRooms[settingsBtn.dataset.roomId]);
+      return;
+    }
+    if (deleteBtn) {
+      openDeleteModal(allRooms[deleteBtn.dataset.roomId]);
+      return;
+    }
+    if (openBtn) {
+      const id = openBtn.dataset.roomId;
+      window.location.href = window.location.pathname + '?room=' + encodeURIComponent(id);
+    }
+  });
 
-applyUILanguage = function() {
-  previousApplyUILanguage();
 
-  const lang = uiLanguageSelect.value;
-  const labels = uiLanguagePopupLabels[lang] || uiLanguagePopupLabels.ko;
+  // ---- 채팅방 아이콘·배경색 선택 ----
+  const ICON_CHOICES = ['💬','🗨️','💭','📢','🌍','🌏','✈️','🗺️','🏠','🏢','🏫','🛒','🍜','🍕','🍔','🍣','☕','🍺','🍰','🥗','🎉','🎁','🎂','🎈','🎮','🎵','🎬','📚','🎨','📷','💻','📱','⚽','🏀','⚾','🏃','🚗','🚲','🏖️','⛺','🐶','🐱','🐻','🦊','🐰','🐼','🐸','🦄','❤️','💕','😀','😎','🥰','🤝','👨‍👩‍👧','👫','⭐','🔥','🌙','☀️','🌈','🌸','🍀','💡'];
+  const COLOR_CHOICES = ['#e0e7ff','#fce7f3','#fee2e2','#ffedd5','#fef9c3','#dcfce7','#ccfbf1','#dbeafe','#ede9fe','#f1f5f9','#6366f1','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#0ea5e9','#8b5cf6','#475569'];
+  let iconTarget = null, pickedIcon = null, pickedColor = null, iconPickerBuilt = false;
 
-  uiLanguageButton.textContent = labels.button;
-  uiLanguagePopupTitle.textContent = labels.title;
-};
+  function buildIconPicker() {
+    if (iconPickerBuilt) return;
+    iconPickerBuilt = true;
+    const iconGrid = $('iconGrid');
+    iconGrid.innerHTML = '<button type="button" class="icon-choice h-10 rounded-lg flex items-center justify-center text-indigo-600 hover:bg-slate-100" data-icon="" title="' + safeHtml(xt().defaultIcon) + '"><i class="fa-solid fa-comments"></i></button>'
+      + ICON_CHOICES.map(icon => '<button type="button" class="icon-choice h-10 rounded-lg flex items-center justify-center text-xl hover:bg-slate-100" data-icon="' + safeHtml(icon) + '">' + safeHtml(icon) + '</button>').join('');
+    const colorGrid = $('colorGrid');
+    colorGrid.innerHTML = '<button type="button" class="color-choice w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-500 text-[11px] flex items-center justify-center" data-color="" title="' + safeHtml(xt().resetColor) + '"><i class="fa-solid fa-rotate-left"></i></button>'
+      + COLOR_CHOICES.map(color => '<button type="button" class="color-choice w-7 h-7 rounded-full border border-slate-300" data-color="' + color + '" style="background:' + color + '"></button>').join('')
+      + '<label class="relative w-7 h-7 rounded-full overflow-hidden border border-slate-300 cursor-pointer" title="' + safeHtml(xt().customColor) + '" style="background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)"><input id="customColorInput" type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></label>';
+    iconGrid.addEventListener('click', event => {
+      const btn = event.target.closest('.icon-choice'); if (!btn) return;
+      pickedIcon = btn.dataset.icon || null; applyIconPreview();
+    });
+    colorGrid.addEventListener('click', event => {
+      const btn = event.target.closest('.color-choice'); if (!btn) return;
+      pickedColor = btn.dataset.color || null; applyIconPreview();
+    });
+    $('customColorInput').addEventListener('input', event => { pickedColor = event.target.value; applyIconPreview(); });
+  }
+  function applyIconPreview() {
+    const box = $('iconPreview');
+    box.style.background = isHexColor(pickedColor) ? pickedColor : '#e0e7ff';
+    box.innerHTML = pickedIcon ? safeHtml(pickedIcon) : '<i class="fa-solid fa-comments text-indigo-600 text-2xl"></i>';
+    document.querySelectorAll('#iconGrid .icon-choice').forEach(btn => btn.classList.toggle('ring-2', (btn.dataset.icon || null) === pickedIcon));
+    document.querySelectorAll('#iconGrid .icon-choice').forEach(btn => btn.classList.toggle('ring-indigo-500', (btn.dataset.icon || null) === pickedIcon));
+    document.querySelectorAll('#colorGrid .color-choice').forEach(btn => btn.classList.toggle('ring-2', (btn.dataset.color || null) === pickedColor));
+    document.querySelectorAll('#colorGrid .color-choice').forEach(btn => btn.classList.toggle('ring-indigo-500', (btn.dataset.color || null) === pickedColor));
+  }
+  function openIconPicker(room) {
+    if (!room) return;
+    buildIconPicker();
+    iconTarget = room;
+    pickedIcon = room.icon ? String(room.icon).slice(0, 16) : null;
+    pickedColor = isHexColor(room.color) ? room.color : null;
+    setText('iconPreviewName', room.name || room.id);
+    applyIconPreview();
+    openModal($('iconPickerModal'));
+  }
+  function closeIconPicker() { closeModal($('iconPickerModal')); iconTarget = null; }
+  $('iconModalCloseBtn').addEventListener('click', closeIconPicker);
+  $('iconCancelBtn').addEventListener('click', closeIconPicker);
+  $('iconSaveBtn').addEventListener('click', async () => {
+    if (!iconTarget) return;
+    const btn = $('iconSaveBtn'); btn.disabled = true;
+    try {
+      await directoryRef.child(iconTarget.id).update({ icon: pickedIcon || null, color: pickedColor || null });
+      closeIconPicker();
+    } catch (error) {
+      console.error(error); alert(xt().iconSaveFail);
+    } finally { btn.disabled = false; }
+  });
 
-applyUILanguage();
+  // ---- 채팅방 삭제 확인 창 ----
+  function openDeleteModal(room) {
+    if (!room) return;
+    deleteTarget = room;
+    setText('deleteModalRoomName', '「' + (room.name || room.id) + '」');
+    const locked = !!room.password;
+    $('deletePasswordFields').classList.toggle('hidden', !locked);
+    $('deletePasswordInput').value = '';
+    clearError('deleteError');
+    openModal($('deleteRoomModal'));
+    if (locked) setTimeout(() => $('deletePasswordInput').focus(), 50);
+  }
+  function closeDeleteModal() { closeModal($('deleteRoomModal')); deleteTarget = null; }
+  $('deleteCancelBtn').addEventListener('click', closeDeleteModal);
+  $('deletePasswordInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('deleteConfirmBtn').click(); });
+  $('deleteConfirmBtn').addEventListener('click', async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    const btn = $('deleteConfirmBtn'); btn.disabled = true;
+    clearError('deleteError');
+    try {
+      const snapshot = await directoryRef.child(id).once('value');
+      const latest = snapshot.val();
+      if (!latest) { closeDeleteModal(); return; } // 이미 삭제된 방
+      if (latest.password) {
+        const typed = $('deletePasswordInput').value;
+        if (!typed) { showError('deleteError', t().needPassword); return; }
+        if (typed !== latest.password) { showError('deleteError', t().wrongPassword); $('deletePasswordInput').select(); return; }
+      }
+      await Promise.all([
+        directoryRef.child(id).remove(),
+        database.ref(dataPrefix + 'roomLog/' + id).remove()
+      ]);
+      try { localStorage.removeItem(lastReadStorageKey(id)); } catch (error) {}
+      closeDeleteModal();
+    } catch (error) {
+      console.error(error);
+      showError('deleteError', xt().deleteFail);
+    } finally { btn.disabled = false; }
+  });
+  $('roomEditToggleBtn').addEventListener('click', () => { listEditMode = !listEditMode; renderRoomList(); });
+  els.roomSearchInput.addEventListener('input', renderRoomList);
+  $('roomListBtn').addEventListener('click', leaveToLobby);
+  const languagePairs = [['uiLanguageButton', 'uiLanguagePopup'], ['lobbyLanguageButton', 'lobbyLanguagePopup']];
+  languagePairs.forEach(([buttonId, popupId]) => $(buttonId).addEventListener('click', () => $(popupId).classList.toggle('hidden')));
+  document.querySelectorAll('.ui-language-option').forEach(button => button.addEventListener('click', () => {
+    languagePairs.forEach(([, popupId]) => $(popupId).classList.add('hidden'));
+    try { localStorage.setItem('chatUiLanguage', button.dataset.uiLang); } catch (error) {}
+    setUILanguage(button.dataset.uiLang);
+  }));
+  document.addEventListener('click', event => {
+    languagePairs.forEach(([buttonId, popupId]) => {
+      if (!$(buttonId).contains(event.target) && !$(popupId).contains(event.target)) $(popupId).classList.add('hidden');
+    });
+  });
 
-// 상태 메시지를 현재 화면 언어에 맞게 표시
-showStatus = function(msg) {
-  const t = uiTranslations[uiLanguageSelect.value] || uiTranslations.ko;
-  statusText.textContent =
-    msg === 'AI 번역 중...' ? t.translating : t.processing;
-  statusNotice.classList.remove('hidden');
-};
-  </script>
+  // 기존 사용자 ID 변경 기능
+  const openUserIdModal = () => { $('newUserIdInput').value = myUserId; openModal(els.userModal); $('newUserIdInput').focus(); };
+  $('changeUserBtn').addEventListener('click', openUserIdModal);
+  $('lobbyChangeUserBtn').addEventListener('click', openUserIdModal);
+  const closeUserModal = () => closeModal(els.userModal);
+  $('closeModalBtn').addEventListener('click', closeUserModal); $('cancelModalBtn').addEventListener('click', closeUserModal);
+  $('saveUserBtn').addEventListener('click', () => {
+    const val = $('newUserIdInput').value.trim();
+    if (!val) return;
+    myUserId = val; localStorage.setItem('myUserId', myUserId); renderUserChips(); closeUserModal();
+  });
+  $('newUserIdInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('saveUserBtn').click(); });
+  function avatarColor(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360; return 'hsl(' + h + ' 62% 46%)'; }
+  function renderUserChips() {
+    const initial = (Array.from(String(myUserId).trim())[0] || '?').toUpperCase();
+    [['userDisplay', 'userAvatar'], ['lobbyUserDisplay', 'lobbyUserAvatar']].forEach(([nameId, avatarId]) => {
+      setText(nameId, myUserId);
+      const avatar = $(avatarId); avatar.textContent = initial; avatar.style.background = avatarColor(myUserId);
+    });
+  }
+  renderUserChips();
+
+  function showStatus(message) { clearTimeout(statusTimer); els.statusText.textContent = message; els.statusNotice.classList.remove('hidden'); els.statusNotice.classList.add('flex'); }
+  function hideStatus() { els.statusNotice.classList.add('hidden'); els.statusNotice.classList.remove('flex'); }
+  async function translateText(text) {
+    const tx = t();
+    const targetLang = langMap[els.targetLangSelect.value] || 'English';
+    try {
+      showStatus(tx.translating);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+      let response;
+      try { response = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ text, targetLang }), signal:controller.signal }); }
+      finally { clearTimeout(timer); }
+      hideStatus();
+      if (!response.ok) {
+        if (response.status === 404) return { ok:false, reason: tx.failNotFound };
+        if (response.status === 429) return { ok:false, reason: tx.failLimit };
+        if (response.status === 504) return { ok:false, reason: tx.failTimeout };
+        if ([500,502,503].includes(response.status)) return { ok:false, reason: tx.failServer };
+        return { ok:false, reason: tx.failDefault + 'Error (' + response.status + ')' };
+      }
+      const data = await response.json();
+      return data.translated ? { ok:true, text: data.translated } : { ok:false, reason: tx.failEmpty };
+    } catch (error) {
+      hideStatus();
+      if (error.name === 'AbortError') return { ok:false, reason: tx.failTimeout };
+      console.error('Translation error:', error);
+      return { ok:false, reason: tx.failConnection };
+    }
+  }
+
+  async function sendMessage(text) {
+    if (!activeRoomRef || !text || !text.trim() || isSending) return;
+    const cleanText = text.trim();
+    isSending = true; els.sendBtn.disabled = true;
+    try {
+      const result = await translateText(cleanText);
+      if (!result.ok) {
+        // 번역에 실패하면 실패 문구를 대화에 저장하지 않고, 원문만 보낸 뒤 잠깐 알려 준다.
+        showStatus(result.reason + ' ' + xt().sentWithoutTranslation);
+        statusTimer = setTimeout(hideStatus, 5000);
+      }
+      await activeRoomRef.push({ sender:myUserId, text:cleanText, translatedText: result.ok ? result.text : null, timestamp:Date.now() });
+    } catch (error) { console.error('Could not send message:', error); alert(xt().sendFail); }
+    finally { isSending = false; els.sendBtn.disabled = false; }
+  }
+  $('sendBtn').addEventListener('click', async () => {
+    const val = els.textInput.value.trim(); if (!val) return;
+    els.textInput.value = ''; resizeTextInput(); await sendMessage(val);
+  });
+  els.textInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('sendBtn').click(); }
+  });
+  els.textInput.addEventListener('input', resizeTextInput);
+  function resizeTextInput() {
+    els.textInput.style.height = '48px';
+    const maxHeight = 128;
+    const newHeight = Math.min(els.textInput.scrollHeight, maxHeight);
+    els.textInput.style.height = newHeight + 'px';
+    els.textInput.style.overflowY = els.textInput.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }
+  function scrollChatToBottom() { requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; }); }); }
+
+  function fillBubble(bubble, data, isMine) {
+    const x = xt();
+    let html = `<div class="text-xs md:text-sm ${isMine ? 'text-indigo-200' : 'text-slate-400'} font-normal break-words leading-relaxed">${safeHtml(data.text || '')}</div>`;
+    if (data.translatedText) {
+      html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
+    } else if (isMine) {
+      // 내 메시지인데 번역이 없으면(번역 실패) 다시 번역할 수 있다.
+      html += `<div class="mt-1.5"><button type="button" class="retry-translate-btn inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition"><i class="fa-solid fa-rotate-right text-[10px]"></i><span>${safeHtml(x.retryTranslate)}</span></button></div>`;
+    }
+    bubble.innerHTML = html;
+  }
+  function buildMessageElement(data, key) {
+    const tx = t();
+    const isMine = data.sender === myUserId;
+    const wrap = document.createElement('div');
+    wrap.className = `flex flex-col ${isMine ? 'items-end' : 'items-start'} my-1`;
+    wrap.dataset.chatMessage = 'true'; wrap.dataset.messageTimestamp = String(data.timestamp || ''); wrap.dataset.key = key || '';
+    const sender = document.createElement('span'); sender.className = 'text-xs font-semibold text-slate-600 mb-1 px-1'; sender.textContent = isMine ? tx.me : (data.sender || '');
+    const row = document.createElement('div'); row.className = `flex items-end gap-1.5 w-full ${isMine ? 'justify-end' : 'justify-start'}`;
+    const bubble = document.createElement('div'); bubble.className = (isMine ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm') + ' msg-bubble';
+    fillBubble(bubble, data, isMine);
+    const time = document.createElement('span'); time.className = 'text-[10px] text-slate-400 whitespace-nowrap shrink-0 pb-0.5'; time.dataset.messageTimestamp = String(data.timestamp || ''); time.textContent = formatMessageTime(data.timestamp);
+    if (isMine) { row.appendChild(time); row.appendChild(bubble); } else { row.appendChild(bubble); row.appendChild(time); }
+    wrap.appendChild(sender); wrap.appendChild(row);
+    return wrap;
+  }
+  function renderMessage(data, key, options = {}) {
+    if (key) {
+      if (renderedKeys.has(key)) return;
+      renderedKeys.add(key); messageStore.set(key, data);
+      if (!oldestKey || key < oldestKey) oldestKey = key;
+      if (!newestKey || key > newestKey) newestKey = key;
+    }
+    const isMine = data.sender === myUserId;
+    const box = els.chatContainer;
+    // 위쪽 이전 대화를 보고 있을 때는 새 메시지가 와도 화면을 아래로 끌어내리지 않는다.
+    const stick = !historyReady || isMine || (box.scrollHeight - box.scrollTop - box.clientHeight < 160);
+    const wrap = buildMessageElement(data, key);
+    const stamp = Number(data.timestamp);
+    if (stamp) {
+      const s = timeSettings();
+      const dayKey = dateKeyOf(stamp, s);
+      if (dayKey !== lastDateKey) { box.appendChild(makeDateSeparator(stamp, s)); lastDateKey = dayKey; }
+    }
+    box.appendChild(wrap);
+    if (stick) scrollChatToBottom();
+    if (options.live && !isMine && document.hidden) { hiddenUnread++; updateChatTitle(); }
+    if (historyReady) maybeMarkRead();
+  }
+  function updateMessageElement(key, data) {
+    messageStore.set(key, data);
+    const wrap = Array.from(els.chatContainer.querySelectorAll('[data-chat-message="true"]')).find(node => node.dataset.key === key);
+    if (!wrap) return;
+    const bubble = wrap.querySelector('.msg-bubble');
+    if (bubble) fillBubble(bubble, data, data.sender === myUserId);
+  }
+  function updateLoadMoreButton() {
+    const wrap = $('loadMoreWrap'), btn = $('loadMoreBtn');
+    if (!wrap || !btn) return;
+    wrap.classList.toggle('hidden', !hasMoreMessages);
+    btn.disabled = loadingMore;
+    const icon = btn.querySelector('i');
+    if (icon) icon.className = loadingMore ? 'fa-solid fa-spinner fa-spin text-[11px]' : 'fa-solid fa-clock-rotate-left text-[11px]';
+  }
+  async function loadOlderMessages() {
+    if (loadingMore || !hasMoreMessages || !oldestKey || !activeRoomRef) return;
+    loadingMore = true; updateLoadMoreButton();
+    try {
+      const snap = await activeRoomRef.orderByKey().endAt(oldestKey).limitToLast(PAGE_SIZE + 1).once('value');
+      const items = [];
+      snap.forEach(child => { if (child.key !== oldestKey && !renderedKeys.has(child.key)) items.push({ key: child.key, data: child.val() }); });
+      hasMoreMessages = snap.numChildren() >= PAGE_SIZE + 1;
+      const box = els.chatContainer, prevHeight = box.scrollHeight, prevTop = box.scrollTop;
+      const fragment = document.createDocumentFragment();
+      items.forEach(({ key, data }) => {
+        if (!data) return;
+        renderedKeys.add(key); messageStore.set(key, data);
+        if (!oldestKey || key < oldestKey) oldestKey = key;
+        fragment.appendChild(buildMessageElement(data, key));
+      });
+      const anchor = $('loadMoreWrap');
+      anchor.parentNode.insertBefore(fragment, anchor.nextSibling);
+      refreshMessageTimes();
+      box.scrollTop = prevTop + (box.scrollHeight - prevHeight); // 보던 위치 유지
+    } catch (error) {
+      console.error('Load older failed:', error); alert(xt().loadMoreFail);
+    } finally { loadingMore = false; updateLoadMoreButton(); }
+  }
+
+  // ---- 읽음 표시 / 탭 제목 알림 ----
+  function maybeMarkRead() {
+    if (activeRoomId && newestKey && document.visibilityState === 'visible') writeLastRead(activeRoomId, newestKey);
+  }
+  function updateChatTitle() {
+    const name = activeRoomMeta ? (activeRoomMeta.name || activeRoomMeta.id) : '';
+    document.title = hiddenUnread > 0 ? '(' + (hiddenUnread > 99 ? '99+' : hiddenUnread) + ') ' + xt().newMessage + (name ? ' · ' + name : '') : baseTitle;
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !activeRoomId) return;
+    hiddenUnread = 0; updateChatTitle(); maybeMarkRead();
+  });
+
+  // ---- 번역문 복사 / 다시 번역 ----
+  async function handleCopy(btn) {
+    const textEl = btn.parentElement && btn.parentElement.querySelector('.translated-text');
+    const text = textEl ? textEl.textContent : '';
+    if (!text) return;
+    let copied = false;
+    try { await navigator.clipboard.writeText(text); copied = true; }
+    catch (error) {
+      try {
+        const area = document.createElement('textarea');
+        area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+        document.body.appendChild(area); area.select(); copied = document.execCommand('copy'); area.remove();
+      } catch (fallbackError) {}
+    }
+    if (!copied) return;
+    clearTimeout(btn._copyTimer);
+    const icon = btn.querySelector('i'); if (icon) icon.className = 'fa-solid fa-check';
+    let toast = btn.querySelector('.copy-toast');
+    if (!toast) {
+      toast = document.createElement('span');
+      toast.className = 'copy-toast absolute right-0 -top-8 px-2 py-1 rounded-md bg-slate-800 text-white text-[11px] font-medium whitespace-nowrap shadow-lg pointer-events-none';
+      btn.appendChild(toast);
+    }
+    toast.textContent = xt().copied;
+    btn._copyTimer = setTimeout(() => { if (icon) icon.className = 'fa-regular fa-copy'; if (toast) toast.remove(); }, 1400);
+  }
+  async function retryTranslation(btn) {
+    const wrap = btn.closest('[data-chat-message="true"]');
+    const key = wrap && wrap.dataset.key;
+    const data = key && messageStore.get(key);
+    if (!data || btn.disabled || !activeRoomRef) return;
+    btn.disabled = true;
+    const icon = btn.querySelector('i'); if (icon) icon.classList.add('fa-spin');
+    const result = await translateText(data.text);
+    if (!result.ok) {
+      showStatus(result.reason); statusTimer = setTimeout(hideStatus, 5000);
+      btn.disabled = false; if (icon) icon.classList.remove('fa-spin');
+      return;
+    }
+    try {
+      await activeRoomRef.child(key).update({ translatedText: result.text });
+      updateMessageElement(key, Object.assign({}, data, { translatedText: result.text }));
+    } catch (error) {
+      console.error('Retry save failed:', error); alert(xt().sendFail);
+      btn.disabled = false; if (icon) icon.classList.remove('fa-spin');
+    }
+  }
+  els.chatContainer.addEventListener('click', event => {
+    if (event.target.closest('#loadMoreBtn')) { loadOlderMessages(); return; }
+    const copyBtn = event.target.closest('.copy-translation-btn'); if (copyBtn) { handleCopy(copyBtn); return; }
+    const retryBtn = event.target.closest('.retry-translate-btn'); if (retryBtn) retryTranslation(retryBtn);
+  });
+
+  function dateKeyOf(stamp, s) {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone:s.zone, year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(new Date(stamp)).reduce((o,x) => { o[x.type] = x.value; return o; }, {});
+    return `${p.year}-${p.month}-${p.day}`;
+  }
+  function makeDateSeparator(stamp, s) {
+    const sep = document.createElement('div'); sep.className = 'message-date-separator flex justify-center my-4 w-full';
+    const label = document.createElement('span'); label.className = 'bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full';
+    label.textContent = new Date(stamp).toLocaleDateString(s.locale, { timeZone:s.zone, year:'numeric', month:'long', day:'numeric', weekday:'long' });
+    sep.appendChild(label);
+    return sep;
+  }
+  function timeSettings() { return ({ ko:{locale:'ko-KR',zone:'Asia/Seoul'}, zh:{locale:'zh-TW',zone:'Asia/Taipei'}, ja:{locale:'ja-JP',zone:'Asia/Tokyo'}, en:{locale:'en-US',zone:'America/New_York'} })[uiLang] || {locale:'ko-KR',zone:'Asia/Seoul'}; }
+  function formatMessageTime(timestamp) {
+    if (!timestamp) return '';
+    const s = timeSettings();
+    return new Date(Number(timestamp)).toLocaleTimeString(s.locale, { timeZone:s.zone, hour:'numeric', minute:'2-digit', hour12:true });
+  }
+  // 화면 언어를 바꿀 때만 전체 메시지의 시간 표시와 날짜 구분선을 다시 계산한다.
+  function refreshMessageTimes() {
+    const s = timeSettings();
+    const messages = Array.from(els.chatContainer.querySelectorAll('[data-chat-message="true"]'));
+    els.chatContainer.querySelectorAll('.message-date-separator').forEach(node => node.remove());
+    let lastKey = '';
+    messages.forEach(message => {
+      const stamp = Number(message.dataset.messageTimestamp); if (!stamp) return;
+      const key = dateKeyOf(stamp, s);
+      const time = message.querySelector('[data-message-timestamp]'); if (time) time.textContent = formatMessageTime(stamp);
+      if (key !== lastKey) { els.chatContainer.insertBefore(makeDateSeparator(stamp, s), message); lastKey = key; }
+    });
+    lastDateKey = lastKey;
+  }
+
+  // 음성 입력 (브라우저가 지원하는 경우)
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true;
+    function updateSTTLanguage() { recognition.lang = ({ko:'ko-KR',zh:'zh-TW',ja:'ja-JP',en:'en-US'})[els.sourceLangSelect.value] || 'ko-KR'; }
+    function stopRecordingUI() { els.micBtn.classList.remove('recording-active'); els.micIcon.className = 'fa-solid fa-microphone'; els.textInput.placeholder = t().inputPlaceholder; }
+    els.micBtn.addEventListener('click', () => {
+      if (!activeRoomId) return;
+      if (!isRecording) { isManualStop = false; updateSTTLanguage(); try { recognition.start(); } catch (error) { console.warn('STT start:', error); } }
+      else { isManualStop = true; isRecording = false; try { recognition.stop(); recognition.abort(); } catch (error) {} stopRecordingUI(); }
+    });
+    recognition.onstart = () => { isRecording = true; els.micBtn.classList.add('recording-active'); els.micIcon.className = 'fa-solid fa-square'; els.textInput.placeholder = t().listening; };
+    recognition.onend = () => { if (!isManualStop && isRecording) { try { recognition.start(); } catch (error) { isRecording = false; stopRecordingUI(); } } else { isRecording = false; stopRecordingUI(); } };
+    recognition.onresult = event => {
+      let finalText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+      if (finalText.trim()) { els.textInput.value = els.textInput.value ? els.textInput.value + ' ' + finalText.trim() : finalText.trim(); resizeTextInput(); }
+    };
+    recognition.onerror = event => {
+      console.warn('Speech recognition:', event.error);
+      if (!isManualStop && ['no-speech','network'].includes(event.error)) { try { recognition.start(); } catch (error) {} }
+      else if (isManualStop || ['not-allowed','service-not-allowed'].includes(event.error)) { isRecording = false; stopRecordingUI(); }
+    };
+  } else {
+    els.micBtn.disabled = true; els.micBtn.classList.add('opacity-50','cursor-not-allowed');
+  }
+
+  // 첫 화면 언어 설정과 진입 초기화
+  setUILanguage(uiLang);
+  routeIntoRequestedRoom();
+})();
+</script>
 </body>
 </html>
