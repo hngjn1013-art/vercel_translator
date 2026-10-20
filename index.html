@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>실시간 음성 & 텍스트 번역 채팅방</title>
+  
+  <!-- Firebase 8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .chat-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .chat-scroll::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .recording-active {
+      animation: pulse-ring 1.5s infinite;
+      background-color: #ef4444 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col justify-between max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
+
+  
+  <!-- 상단 컨트롤 헤더 -->
+  <header class="bg-white border-b border-slate-200 p-3 flex flex-col gap-2 shadow-sm z-10">
+
+    <!-- 첫째 줄: 제목, 내 ID, ID 설정, 화면 언어 -->
+    <div class="flex items-center justify-between gap-2">
+      <h1 id="uiTitle" class="font-bold text-slate-800 text-base md:text-lg shrink-0">
+        AI 번역 채팅방
+      </h1>
+
+      <div class="flex items-center gap-1 min-w-0">
+        <span class="text-xs text-slate-500 whitespace-nowrap">
+          <span id="uiMyIdLabel">내 ID:</span>
+          <b id="userDisplay" class="text-indigo-600">UserA</b>
+        </span>
+
+        <button id="changeUserBtn" title="ID 변경"
+          class="px-1 text-slate-400 hover:text-indigo-600 transition-colors shrink-0">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+
+        <div class="relative shrink-0">
+          <button id="uiLanguageButton" type="button"
+            class="px-2 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg whitespace-nowrap">
+            🌐 한국어 ▼
+          </button>
+
+          <div id="uiLanguagePopup"
+            class="hidden absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
+            <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">
+              화면 언어 선택
+            </p>
+            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇰🇷 한국어</button>
+            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇹🇼 繁體中文</button>
+            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇯🇵 日本語</button>
+            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇺🇸 English</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 둘째 줄: 입력 언어와 번역 언어 -->
+    <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
+      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+        <span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span>
+        <select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700">
+          <option value="ko">한국어</option>
+          <option value="zh">대만어 (繁體中文)</option>
+          <option value="ja">일본어 (日本語)</option>
+          <option value="en">영어 (English)</option>
+        </select>
+      </div>
+
+      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+        <span id="uiTargetLabel" class="text-indigo-600 font-medium mr-1.5 shrink-0">번역:</span>
+        <select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700">
+          <option value="zh">대만어 (繁體中文)</option>
+          <option value="ko">한국어</option>
+          <option value="ja">일본어 (日本語)</option>
+          <option value="en">영어 (English)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 화면 언어 설정: 기존 JavaScript 호환용 -->
+    <select id="uiLanguageSelect" class="hidden" aria-hidden="true" tabindex="-1">
+      <option value="ko">한국어</option>
+      <option value="zh">繁體中文（台灣）</option>
+      <option value="ja">日本語</option>
+      <option value="en">English</option>
+    </select>
+
+  </header>
+
+  <!-- 대화창 영역 -->
+  <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 chat-scroll bg-slate-50/50">
+    <div class="text-center my-2">
+      <span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">
+        채팅방에 연결되었습니다. 대화를 시작하세요!
+      </span>
+    </div>
+  </main>
+
+  <!-- ID 변경 모달 (커스텀 팝업) -->
+  <div id="userModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+        <h3 id="uiModalTitle" class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-indigo-600"></i> 사용자 ID 설정
+        </h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div>
+        <label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label>
+        <input type="text" id="newUserIdInput" placeholder="예: 홍길동, Alex..." 
+               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">취소</button>
+        <button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition-colors">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 입력창 컨트롤 영역 -->
+  <footer class="bg-white border-t border-slate-200 p-3 z-10">
+    <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1 animate-pulse px-2 flex items-center gap-1">
+      <i class="fa-solid fa-spinner fa-spin"></i> <span id="statusText">번역 처리 중...</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- 음성 입력 버튼 -->
+      <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg hover:bg-indigo-700 transition-all shadow-md shrink-0">
+        <i id="micIcon" class="fa-solid fa-microphone"></i>
+      </button>
+
+      <!-- 텍스트 입력창 -->
+      <input type="text" id="textInput" placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..." autocomplete="off"
+        class="flex-1 h-12 bg-slate-100 border border-slate-300 rounded-full px-4 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner">
+
+      <!-- 전송 버튼 -->
+      <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+   
+   // URL 파라미터 수집 (방 번호 / 사용자 ID)
+const urlParams = new URLSearchParams(window.location.search);
+
+let myUserId =
+  urlParams.get('user') ||
+  localStorage.getItem('myUserId') ||
+  ('User_' + Math.floor(Math.random() * 1000));
+
+localStorage.setItem('myUserId', myUserId);
+
+const roomId = urlParams.get('room') || 'testroom';
+
+document.getElementById('userDisplay').innerText = myUserId;
+    // Firebase 설정
+    const firebaseConfig = {
+      databaseURL: "https://translator-16b24-default-rtdb.firebaseio.com/"
+    };
+    
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    const roomRef = database.ref('rooms/' + roomId);
+    const typingRef = database.ref('typing/' + roomId);
+
+    // DOM Elements
+    const chatContainer = document.getElementById('chatContainer');
+
+    // 채팅 내역이 로드되거나 화면 크기가 바뀌어도 최신 메시지 위치로 이동
+    function scrollChatToBottom() {
+      requestAnimationFrame(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // 레이아웃 계산이 한 번 더 끝난 뒤 위치를 보정
+        requestAnimationFrame(() => {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
+      });
+    }
+
+    // 페이지 레이아웃이 완성된 뒤에도 맨 아래 위치를 한 번 더 보장
+    window.addEventListener('load', () => {
+      scrollChatToBottom();
+      setTimeout(scrollChatToBottom, 150);
+      setTimeout(scrollChatToBottom, 500);
+    });
+
+    const micBtn = document.getElementById('micBtn');
+    const micIcon = document.getElementById('micIcon');
+    const textInput = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sourceLangSelect = document.getElementById('sourceLangSelect');
+    const targetLangSelect = document.getElementById('targetLangSelect');
+    const statusNotice = document.getElementById('statusNotice');
+    const statusText = document.getElementById('statusText');
+
+    // ID 변경 모달 요소
+    const changeUserBtn = document.getElementById('changeUserBtn');
+    const userModal = document.getElementById('userModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const saveUserBtn = document.getElementById('saveUserBtn');
+    const newUserIdInput = document.getElementById('newUserIdInput');
+    const userDisplay = document.getElementById('userDisplay');
+
+    // 상태 메시지 표시 함수 추가
+    function showStatus(msg) {
+      statusText.innerText = msg;
+      statusNotice.classList.remove('hidden');
+    }
+
+    // 상태 메시지 숨김 함수 추가
+    function hideStatus() {
+      statusNotice.classList.add('hidden');
+    }
+
+    // 모달 열기
+    changeUserBtn.onclick = () => {
+      newUserIdInput.value = myUserId;
+      userModal.classList.remove('hidden');
+      newUserIdInput.focus();
+    };
+
+    // 모달 닫기
+    const closeModal = () => {
+      userModal.classList.add('hidden');
+    };
+
+    closeModalBtn.onclick = closeModal;
+    cancelModalBtn.onclick = closeModal;
+
+   // ID 저장
+saveUserBtn.onclick = () => {
+  const val = newUserIdInput.value.trim();
+  if (val) {
+    typingRef.child(myUserId).remove();
+    myUserId = val;
+    localStorage.setItem('myUserId', myUserId);
+    userDisplay.innerText = myUserId;
+    closeModal();
+  }
+};
+
+newUserIdInput.onkeypress = (e) => {
+  if (e.key === 'Enter') {
+    saveUserBtn.click();
+  }
+};
+    
+
+    newUserIdInput.onkeypress = (e) => {
+      if (e.key === 'Enter') {
+        saveUserBtn.click();
+      }
+    };
+
+    // 언어 코드 매핑
+    const langMap = {
+      'ko': 'Korean',
+      'zh': 'Traditional Chinese (Taiwan, 繁體中文)',
+      'ja': 'Japanese',
+      'en': 'English'
+    };
+
+    async function translateText(text) {
+      const targetLangCode = targetLangSelect.value;
+      const targetLang = langMap[targetLangCode] || "English";
+
+      try {
+        showStatus("AI 번역 중...");
+        const response = await fetch('/.netlify/functions/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, targetLang: targetLang })
+        });
+
+        hideStatus();
+
+        if (!response.ok) {
+          console.warn("Translation Server Warning:", response.statusText);
+          return null;
+        }
+
+        const data = await response.json();
+        return data.translated || null;
+
+      } catch (error) {
+        console.error("Translation Exception:", error);
+        hideStatus();
+        return null;
+      }
+    }
+
+    // 메시지 발송 함수
+    async function sendMessage(text) {
+      if (!text || !text.trim()) return;
+      const cleanText = text.trim();
+
+      typingRef.child(myUserId).remove();
+
+      // 번역 실행
+      const translated = await translateText(cleanText);
+
+      // Realtime Database 전송
+      roomRef.push({
+        sender: myUserId,
+        text: cleanText,
+        translatedText: translated || null,
+        timestamp: Date.now()
+      });
+    }
+
+    // 전송 버튼 이벤트
+    sendBtn.onclick = () => {
+      const val = textInput.value;
+      if (val.trim()) {
+        sendMessage(val);
+        textInput.value = '';
+      }
+    };
+
+    // 엔터키 전송 이벤트
+    textInput.onkeypress = (e) => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    };
+
+    // 실시간 메시지 수신 및 DOM 렌더링
+    roomRef.on('child_added', (snapshot) => {
+      const data = snapshot.val();
+      const isMyMsg = data.sender === myUserId;
+
+      const msgWrapper = document.createElement('div');
+      msgWrapper.className = `flex flex-col ${isMyMsg ? 'items-end' : 'items-start'} my-1`;
+
+      const senderLabel = document.createElement('span');
+      senderLabel.className = 'text-[10px] text-slate-400 mb-0.5 px-1';
+      senderLabel.innerText = isMyMsg ? '나' : data.sender;
+
+      const msgBubble = document.createElement('div');
+      msgBubble.className = isMyMsg 
+        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm'
+        : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm';
+
+      /* 원문 텍스트 */
+      let contentHtml = `<div class="text-xs md:text-sm ${isMyMsg ? 'text-indigo-200' : 'text-slate-400'} font-normal break-words leading-relaxed">${escapeHtml(data.text)}</div>`;
+      
+      /* 번역 텍스트 */
+      if (data.translatedText) {
+        contentHtml += `
+          <div class="mt-1 pt-1 border-t ${isMyMsg ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5">
+            <i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i>
+            <span>${escapeHtml(data.translatedText)}</span>
+          </div>`;
+      }
+
+      msgBubble.innerHTML = contentHtml;
+      msgWrapper.appendChild(senderLabel);
+      msgWrapper.appendChild(msgBubble);
+      chatContainer.appendChild(msgWrapper);
+
+      // 새 메시지가 추가되면 최신 메시지 위치로 이동
+      scrollChatToBottom();
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    // 음성 인식 설정
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      function updateSTTLanguage() {
+        const langCode = sourceLangSelect.value;
+        if (langCode === 'ko') recognition.lang = 'ko-KR';
+        else if (langCode === 'zh') recognition.lang = 'zh-TW';
+        else if (langCode === 'ja') recognition.lang = 'ja-JP';
+        else if (langCode === 'en') recognition.lang = 'en-US';
+      }
+
+      let isRecording = false;
+      let isManualStop = false;
+
+      micBtn.onclick = () => {
+        if (!isRecording) {
+          isManualStop = false;
+          updateSTTLanguage();
+          try {
+            recognition.start();
+          } catch (e) {
+            console.warn("STT Start Error:", e);
+          }
+        } else {
+          isManualStop = true;
+          isRecording = false;
+          try {
+            recognition.stop();
+            recognition.abort();
+          } catch (e) {
+            console.warn("STT Stop Error:", e);
+          }
+          stopRecordingUI();
+        }
+      };
+
+      function stopRecordingUI() {
+        micBtn.classList.remove('recording-active');
+        micIcon.className = 'fa-solid fa-microphone';
+        textInput.placeholder =
+  uiTranslations[uiLanguageSelect.value].inputPlaceholder;
+        typingRef.child(myUserId).remove();
+      }
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.classList.add('recording-active');
+        micIcon.className = 'fa-solid fa-square';
+        textInput.placeholder =
+  uiTranslations[uiLanguageSelect.value].listening;
+        typingRef.child(myUserId).set(true);
+      };
+
+      recognition.onend = () => {
+        if (!isManualStop && isRecording) {
+          try {
+            recognition.start();
+          } catch (e) {
+            isRecording = false;
+            stopRecordingUI();
+          }
+        } else {
+          isRecording = false;
+          stopRecordingUI();
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        if (finalTranscript.trim()) {
+          const currentVal = textInput.value;
+          textInput.value = currentVal ? (currentVal + ' ' + finalTranscript.trim()) : finalTranscript.trim();
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Speech Recognition Event Error:", event.error);
+        if (!isManualStop && (event.error === 'no-speech' || event.error === 'network')) {
+          try {
+            recognition.start();
+          } catch(e) {}
+        } else if (isManualStop || event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          isRecording = false;
+          stopRecordingUI();
+        }
+      };
+
+    } else {
+      micBtn.disabled = true;
+      micBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      micBtn.title = "현재 브라우저는 음성 인식을 지원하지 않습니다.";
+    }
+    // ===== 화면 언어 설정 및 다국어 사전 =====
+const uiTranslations = {
+  ko: {
+    myId: '내 ID',
+    title: 'AI 번역 채팅방',
+    uiLanguage: '화면 언어:',
+    source: '입력:',
+    target: '번역:',
+    languages: ['한국어', '대만어 (繁體中文)', '일본어 (日本語)', '영어 (English)'],
+    welcome: '채팅방에 연결되었습니다. 대화를 시작하세요!',
+    changeId: '사용자 ID 설정',
+    idLabel: '새로 사용할 ID를 입력하세요',
+    idPlaceholder: '예: 홍길동, Alex...',
+    cancel: '취소',
+    save: '저장하기',
+    mic: '음성 입력',
+    send: '전송',
+    inputPlaceholder: '메시지를 입력하거나 마이크 버튼을 누르세요...',
+    listening: '음성을 듣고 받아적는 중입니다...',
+    translating: 'AI 번역 중...',
+    processing: '번역 처리 중...',
+    me: '나',
+    unsupported: '현재 브라우저는 음성 인식을 지원하지 않습니다.'
+  },
+  zh: {
+    myId: '我的 ID：',
+    title: 'AI 翻譯聊天室',
+    uiLanguage: '介面語言：',
+    source: '輸入：',
+    target: '翻譯：',
+    languages: ['韓語', '台灣中文（繁體）', '日語', '英語'],
+    welcome: '已連線至聊天室，開始聊天吧！',
+    changeId: '設定使用者 ID',
+    idLabel: '請輸入要使用的 ID',
+    idPlaceholder: '例如：小明、Alex...',
+    cancel: '取消',
+    save: '儲存',
+    mic: '語音輸入',
+    send: '傳送',
+    inputPlaceholder: '輸入訊息或點擊麥克風按鈕...',
+    listening: '正在聆聽並辨識語音...',
+    translating: 'AI 翻譯中...',
+    processing: '正在處理翻譯...',
+    me: '我',
+    unsupported: '目前的瀏覽器不支援語音辨識。'
+  },
+  ja: {
+    myId: '自分のID：',
+    title: 'AI翻訳チャットルーム',
+    uiLanguage: '表示言語：',
+    source: '入力：',
+    target: '翻訳：',
+    languages: ['韓国語', '台湾中国語（繁体字）', '日本語', '英語'],
+    welcome: 'チャットルームに接続しました。会話を始めましょう！',
+    changeId: 'ユーザーID設定',
+    idLabel: '使用するIDを入力してください',
+    idPlaceholder: '例：太郎、Alex...',
+    cancel: 'キャンセル',
+    save: '保存',
+    mic: '音声入力',
+    send: '送信',
+    inputPlaceholder: 'メッセージを入力するか、マイクを押してください...',
+    listening: '音声を認識しています...',
+    translating: 'AI翻訳中...',
+    processing: '翻訳を処理しています...',
+    me: '自分',
+    unsupported: 'このブラウザは音声認識に対応していません。'
+  },
+  en: {
+    myId: 'My ID:',
+    title: 'AI Translation Chat',
+    uiLanguage: 'Display language:',
+    source: 'Input:',
+    target: 'Translate:',
+    languages: ['Korean', 'Traditional Chinese (Taiwan)', 'Japanese', 'English'],
+    welcome: 'Connected to the chat room. Start a conversation!',
+    changeId: 'User ID Settings',
+    idLabel: 'Enter the ID you want to use',
+    idPlaceholder: 'e.g. Alex, John...',
+    cancel: 'Cancel',
+    save: 'Save',
+    mic: 'Voice input',
+    send: 'Send',
+    inputPlaceholder: 'Type a message or tap the microphone...',
+    listening: 'Listening to your voice...',
+    translating: 'AI translating...',
+    processing: 'Translation in progress...',
+    me: 'Me',
+    unsupported: 'Speech recognition is not supported by this browser.'
+  }
+};
+
+const uiLanguageSelect = document.getElementById('uiLanguageSelect');
+
+function applyUILanguage() {
+  const lang = uiLanguageSelect.value;
+  const t = uiTranslations[lang] || uiTranslations.ko;
+
+  document.documentElement.lang =
+    lang === 'zh' ? 'zh-TW' : lang;
+
+  document.getElementById('uiMyIdLabel').textContent = t.myId;  
+  document.getElementById('uiTitle').textContent = t.title;
+  
+const uiLanguageLabel = document.getElementById('uiLanguageLabel');
+if (uiLanguageLabel) uiLanguageLabel.textContent = t.uiLanguage;
+
+  document.getElementById('uiSourceLabel').textContent = t.source;
+  document.getElementById('uiTargetLabel').textContent = t.target;
+  document.getElementById('uiWelcome').textContent = t.welcome;
+
+  // 언어 선택 메뉴의 항목 이름 변경
+  Array.from(sourceLangSelect.options).forEach((option, i) => {
+    option.textContent = t.languages[i];
+  });
+
+ Array.from(targetLangSelect.options).forEach((option) => {
+  const index = {
+    ko: 0,
+    zh: 1,
+    ja: 2,
+    en: 3
+  }[option.value];
+
+  option.textContent = t.languages[index];
+});
+
+  // 사용자 ID 팝업
+  document.getElementById('uiModalTitle').innerHTML =
+    '<i class="fa-solid fa-user-gear text-indigo-600"></i> ' + t.changeId;
+
+  document.getElementById('uiIdLabel').textContent = t.idLabel;
+  newUserIdInput.placeholder = t.idPlaceholder;
+  cancelModalBtn.textContent = t.cancel;
+  saveUserBtn.textContent = t.save;
+
+  // 입력창과 버튼 안내
+  textInput.placeholder = t.inputPlaceholder;
+  micBtn.title = t.mic;
+  sendBtn.title = t.send;
+  changeUserBtn.title = t.changeId;
+  closeModalBtn.title = t.cancel;
+
+  // 음성 인식 미지원 안내
+  if (!SpeechRecognition) {
+    micBtn.title = t.unsupported;
+  }
+
+  // 이미 표시 중인 상태 문구도 변경
+  if (!statusNotice.classList.contains('hidden')) {
+    const currentStatus = statusText.textContent;
+    statusText.textContent =
+      currentStatus === 'AI 번역 중...' ? t.translating : t.processing;
+  }
+
+  // 선택한 화면 언어 저장
+  try {
+    localStorage.setItem('chatUiLanguage', lang);
+  } catch (e) {
+    // 저장할 수 없는 환경에서는 현재 선택만 적용
+  }
+}
+
+// 이전에 선택한 화면 언어 복원
+try {
+  const savedLanguage = localStorage.getItem('chatUiLanguage');
+  if (savedLanguage && uiTranslations[savedLanguage]) {
+    uiLanguageSelect.value = savedLanguage;
+  }
+} catch (e) {}
+
+uiLanguageSelect.addEventListener('change', applyUILanguage);
+
+const uiLanguageButton = document.getElementById('uiLanguageButton');
+const uiLanguagePopup = document.getElementById('uiLanguagePopup');
+const uiLanguagePopupTitle = document.getElementById('uiLanguagePopupTitle');
+
+const uiLanguagePopupLabels = {
+  ko: { button: '🌐 한국어 ▼', title: '화면 언어 선택' },
+  zh: { button: '🌐 繁體中文 ▼', title: '選擇介面語言' },
+  ja: { button: '🌐 日本語 ▼', title: '画面言語を選択' },
+  en: { button: '🌐 English ▼', title: 'Select interface language' }
+};
+
+uiLanguageButton.addEventListener('click', function() {
+  console.log('언어 버튼 클릭됨');
+  uiLanguagePopup.classList.toggle('hidden');
+  console.log('팝업 클래스:', uiLanguagePopup.className);
+});
+
+document.querySelectorAll('.ui-language-option').forEach(button => {
+  button.addEventListener('click', () => {
+    uiLanguageSelect.value = button.dataset.uiLang;
+    applyUILanguage();
+    uiLanguagePopup.classList.add('hidden');
+  });
+});
+
+// 기존 언어 변경 함수에 팝업 버튼 번역 연결
+const previousApplyUILanguage = applyUILanguage;
+
+applyUILanguage = function() {
+  previousApplyUILanguage();
+
+  const lang = uiLanguageSelect.value;
+  const labels = uiLanguagePopupLabels[lang] || uiLanguagePopupLabels.ko;
+
+  uiLanguageButton.textContent = labels.button;
+  uiLanguagePopupTitle.textContent = labels.title;
+};
+
+applyUILanguage();
+
+// 상태 메시지를 현재 화면 언어에 맞게 표시
+showStatus = function(msg) {
+  const t = uiTranslations[uiLanguageSelect.value] || uiTranslations.ko;
+  statusText.textContent =
+    msg === 'AI 번역 중...' ? t.translating : t.processing;
+  statusNotice.classList.remove('hidden');
+};
+  </script>
+</body>
+</html>
