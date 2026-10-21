@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#4f46e5">
   <title>닝닝 번역 사이트</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://translator-16b24-default-rtdb.firebaseio.com" crossorigin>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -122,7 +126,7 @@
       <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1 animate-pulse px-2 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
       <div class="flex items-end gap-2">
         <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg hover:bg-indigo-700 transition-all shadow-md shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
-        <textarea id="textInput" rows="1" placeholder="메시지를 입력하거나 마이크 버튼을 누르세요..." autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
+        <textarea id="textInput" rows="1" placeholder="메시지 입력" autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
         <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </footer>
@@ -234,10 +238,10 @@
   };
 
   const LANGS = {
-    ko: { title:'AI 번역 채팅방', subtitle:'채팅방을 선택하거나 새로 만들어 보세요.', create:'새 채팅방', list:'채팅방 목록', search:'채팅방 검색', loading:'채팅방을 불러오는 중...', noRooms:'아직 채팅방이 없습니다. 새 채팅방을 만들어 보세요.', roomName:'채팅방 이름', createTitle:'새 채팅방 만들기', usePassword:'비밀번호 사용', passwordHint:'필요한 경우 비밀번호를 설정하세요.', password:'비밀번호', make:'만들기', cancel:'취소', enter:'입장', enterTitle:'비밀번호 입력', enterDesc:'이 채팅방에 입장하려면 비밀번호를 입력하세요.', wrongPassword:'비밀번호가 올바르지 않습니다.', roomSettings:'채팅방 설정', passwordOn:'비밀번호 사용 중', passwordOff:'비밀번호 사용 안 함', chooseAction:'변경할 설정', enable:'비밀번호 켜기', disable:'비밀번호 끄기', change:'비밀번호 변경', currentPassword:'현재 비밀번호', newPassword:'새 비밀번호', save:'저장', needPassword:'비밀번호를 입력하세요.', roomCreated:'채팅방을 만들었습니다.', passwordUpdated:'비밀번호 설정을 변경했습니다.', needCurrent:'현재 비밀번호를 입력하세요.', wrongCurrent:'현재 비밀번호가 올바르지 않습니다.', roomNameRequired:'채팅방 이름을 입력하세요.', roomNameTooLong:'채팅방 이름은 40자 이하로 입력하세요.', passwordRequired:'새 비밀번호를 입력하세요.', roomListButton:'목록', noSearchResults:'검색 결과가 없습니다.', welcome:'채팅방에 연결되었습니다. 대화를 시작하세요!', myId:'내 ID:', changeId:'사용자 ID 설정', idLabel:'새로 사용할 ID를 입력하세요', idPlaceholder:'예: 홍길동, Alex...', mic:'음성 입력', send:'전송', inputPlaceholder:'메시지를 입력하거나 마이크 버튼을 누르세요...', listening:'음성을 듣고 받아적는 중입니다...', translating:'AI 번역 중...', me:'나', source:'입력:', target:'번역:', failNotFound:'⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.', failLimit:'⚠️ 번역 실패: API 사용량 한도 초과.', failServer:'⚠️ 번역 실패: AI 서버가 혼잡합니다.', failTimeout:'⚠️ 번역 실패: AI 응답 시간 초과.', failConnection:'⚠️ 번역 실패: 서버 연결을 확인해 주세요.', failEmpty:'⚠️ 번역 실패: 번역 결과를 받지 못했습니다.', failDefault:'⚠️ 번역 실패: ', languageNames:['한국어','대만어 (繁體中文)','일본어 (日本語)','영어 (English)'], buttonLanguage:'🌐 한국어 ▼', languageTitle:'화면 언어 선택', created:'생성', passwordPrompt:'비밀번호 입력' },
-    zh: { title:'AI 翻譯聊天室', subtitle:'選擇聊天室或建立新聊天室。', create:'新增聊天室', list:'聊天室列表', search:'搜尋聊天室', loading:'正在載入聊天室...', noRooms:'目前沒有聊天室，請建立一個。', roomName:'聊天室名稱', createTitle:'建立新聊天室', usePassword:'使用密碼', passwordHint:'可選擇為聊天室設定密碼。', password:'密碼', make:'建立', cancel:'取消', enter:'進入', enterTitle:'輸入密碼', enterDesc:'請輸入密碼以進入聊天室。', wrongPassword:'密碼錯誤。', roomSettings:'聊天室設定', passwordOn:'已啟用密碼', passwordOff:'未使用密碼', chooseAction:'選擇設定', enable:'啟用密碼', disable:'關閉密碼', change:'變更密碼', currentPassword:'目前密碼', newPassword:'新密碼', save:'儲存', needPassword:'請輸入密碼。', roomCreated:'聊天室已建立。', passwordUpdated:'密碼設定已更新。', needCurrent:'請輸入目前密碼。', wrongCurrent:'目前密碼錯誤。', roomNameRequired:'請輸入聊天室名稱。', roomNameTooLong:'聊天室名稱最多 40 個字元。', passwordRequired:'請輸入新密碼。', roomListButton:'列表', noSearchResults:'沒有搜尋結果。', welcome:'已連線至聊天室，開始聊天吧！', myId:'我的 ID：', changeId:'使用者 ID 設定', idLabel:'請輸入要使用的 ID', idPlaceholder:'例如：小明、Alex...', mic:'語音輸入', send:'傳送', inputPlaceholder:'輸入訊息或點擊麥克風按鈕...', listening:'正在辨識語音...', translating:'AI 翻譯中...', me:'我', source:'輸入：', target:'翻譯：', failNotFound:'⚠️ 翻譯失敗：找不到翻譯伺服器。', failLimit:'⚠️ 翻譯失敗：API 使用量已達上限。', failServer:'⚠️ 翻譯失敗：AI 伺服器繁忙。', failTimeout:'⚠️ 翻譯失敗：AI 回應逾時。', failConnection:'⚠️ 翻譯失敗：請檢查伺服器連線。', failEmpty:'⚠️ 翻譯失敗：未收到翻譯結果。', failDefault:'⚠️ 翻譯失敗：', languageNames:['韓語','台灣中文（繁體）','日語','英語'], buttonLanguage:'🌐 繁體中文 ▼', languageTitle:'選擇介面語言', created:'建立', passwordPrompt:'輸入密碼' },
-    ja: { title:'AI翻訳チャットルーム', subtitle:'チャットルームを選択するか、新しく作成してください。', create:'新しい部屋', list:'チャットルーム一覧', search:'チャットルームを検索', loading:'チャットルームを読み込み中...', noRooms:'チャットルームがありません。新しく作成してください。', roomName:'チャットルーム名', createTitle:'新しいチャットルーム', usePassword:'パスワードを使用', passwordHint:'必要に応じてパスワードを設定できます。', password:'パスワード', make:'作成', cancel:'キャンセル', enter:'入室', enterTitle:'パスワードを入力', enterDesc:'入室するにはパスワードを入力してください。', wrongPassword:'パスワードが違います。', roomSettings:'ルーム設定', passwordOn:'パスワード設定あり', passwordOff:'パスワード設定なし', chooseAction:'設定を選択', enable:'パスワードを有効にする', disable:'パスワードを無効にする', change:'パスワードを変更', currentPassword:'現在のパスワード', newPassword:'新しいパスワード', save:'保存', needPassword:'パスワードを入力してください。', roomCreated:'チャットルームを作成しました。', passwordUpdated:'パスワード設定を更新しました。', needCurrent:'現在のパスワードを入力してください。', wrongCurrent:'現在のパスワードが違います。', roomNameRequired:'チャットルーム名を入力してください。', roomNameTooLong:'ルーム名は40文字以内で入力してください。', passwordRequired:'新しいパスワードを入力してください。', roomListButton:'一覧', noSearchResults:'検索結果がありません。', welcome:'チャットルームに接続しました。会話を始めましょう！', myId:'自分のID：', changeId:'ユーザーID設定', idLabel:'使用するIDを入力してください', idPlaceholder:'例：太郎、Alex...', mic:'音声入力', send:'送信', inputPlaceholder:'メッセージを入力するか、マイクを押してください...', listening:'音声を認識しています...', translating:'AI翻訳中...', me:'自分', source:'入力：', target:'翻訳：', failNotFound:'⚠️ 翻訳失敗：翻訳サーバーが見つかりません。', failLimit:'⚠️ 翻訳失敗：API使用量制限を超えました。', failServer:'⚠️ 翻訳失敗：AIサーバーが混雑しています。', failTimeout:'⚠️ 翻訳失敗：AI応答がタイムアウトしました。', failConnection:'⚠️ 翻訳失敗：サーバー接続を確認してください。', failEmpty:'⚠️ 翻訳失敗：翻訳結果を取得できませんでした。', failDefault:'⚠️ 翻訳失敗：', languageNames:['韓国語','台湾中国語（繁体字）','日本語','英語'], buttonLanguage:'🌐 日本語 ▼', languageTitle:'画面言語を選択', created:'作成', passwordPrompt:'パスワード入力' },
-    en: { title:'AI Translation Chat', subtitle:'Choose a chat room or create a new one.', create:'New room', list:'Chat rooms', search:'Search rooms', loading:'Loading chat rooms...', noRooms:'No chat rooms yet. Create one to get started.', roomName:'Room name', createTitle:'Create a chat room', usePassword:'Use a password', passwordHint:'Add a password if you want to restrict casual access.', password:'Password', make:'Create', cancel:'Cancel', enter:'Enter', enterTitle:'Enter password', enterDesc:'Enter the password to join this room.', wrongPassword:'Incorrect password.', roomSettings:'Room settings', passwordOn:'Password enabled', passwordOff:'No password', chooseAction:'Setting', enable:'Enable password', disable:'Disable password', change:'Change password', currentPassword:'Current password', newPassword:'New password', save:'Save', needPassword:'Please enter a password.', roomCreated:'Chat room created.', passwordUpdated:'Password settings updated.', needCurrent:'Please enter the current password.', wrongCurrent:'The current password is incorrect.', roomNameRequired:'Please enter a room name.', roomNameTooLong:'Room names must be 40 characters or fewer.', passwordRequired:'Please enter a new password.', roomListButton:'Rooms', noSearchResults:'No search results.', welcome:'Connected to the chat room. Start a conversation!', myId:'My ID:', changeId:'User ID Settings', idLabel:'Enter the ID you want to use', idPlaceholder:'e.g. Alex, John...', mic:'Voice input', send:'Send', inputPlaceholder:'Type a message or tap the microphone...', listening:'Listening to your voice...', translating:'AI translating...', me:'Me', source:'Input:', target:'Translate:', failNotFound:'⚠️ Translation failed: Translation server not found.', failLimit:'⚠️ Translation failed: API usage limit exceeded.', failServer:'⚠️ Translation failed: AI server is busy.', failTimeout:'⚠️ Translation failed: AI response timed out.', failConnection:'⚠️ Translation failed: Please check your server connection.', failEmpty:'⚠️ Translation failed: No translation result received.', failDefault:'⚠️ Translation failed: ', languageNames:['Korean','Traditional Chinese (Taiwan)','Japanese','English'], buttonLanguage:'🌐 English ▼', languageTitle:'Select interface language', created:'Created', passwordPrompt:'Enter password' }
+    ko: { title:'AI 번역 채팅방', subtitle:'채팅방을 선택하거나 새로 만들어 보세요.', create:'새 채팅방', list:'채팅방 목록', search:'채팅방 검색', loading:'채팅방을 불러오는 중...', noRooms:'아직 채팅방이 없습니다. 새 채팅방을 만들어 보세요.', roomName:'채팅방 이름', createTitle:'새 채팅방 만들기', usePassword:'비밀번호 사용', passwordHint:'필요한 경우 비밀번호를 설정하세요.', password:'비밀번호', make:'만들기', cancel:'취소', enter:'입장', enterTitle:'비밀번호 입력', enterDesc:'이 채팅방에 입장하려면 비밀번호를 입력하세요.', wrongPassword:'비밀번호가 올바르지 않습니다.', roomSettings:'채팅방 설정', passwordOn:'비밀번호 사용 중', passwordOff:'비밀번호 사용 안 함', chooseAction:'변경할 설정', enable:'비밀번호 켜기', disable:'비밀번호 끄기', change:'비밀번호 변경', currentPassword:'현재 비밀번호', newPassword:'새 비밀번호', save:'저장', needPassword:'비밀번호를 입력하세요.', roomCreated:'채팅방을 만들었습니다.', passwordUpdated:'비밀번호 설정을 변경했습니다.', needCurrent:'현재 비밀번호를 입력하세요.', wrongCurrent:'현재 비밀번호가 올바르지 않습니다.', roomNameRequired:'채팅방 이름을 입력하세요.', roomNameTooLong:'채팅방 이름은 40자 이하로 입력하세요.', passwordRequired:'새 비밀번호를 입력하세요.', roomListButton:'목록', noSearchResults:'검색 결과가 없습니다.', welcome:'채팅방에 연결되었습니다. 대화를 시작하세요!', myId:'내 ID:', changeId:'사용자 ID 설정', idLabel:'새로 사용할 ID를 입력하세요', idPlaceholder:'예: 홍길동, Alex...', mic:'음성 입력', send:'전송', inputPlaceholder:'메시지 입력', listening:'음성을 듣고 받아적는 중입니다...', translating:'AI 번역 중...', me:'나', source:'입력:', target:'번역:', failNotFound:'⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.', failLimit:'⚠️ 번역 실패: API 사용량 한도 초과.', failServer:'⚠️ 번역 실패: AI 서버가 혼잡합니다.', failTimeout:'⚠️ 번역 실패: AI 응답 시간 초과.', failConnection:'⚠️ 번역 실패: 서버 연결을 확인해 주세요.', failEmpty:'⚠️ 번역 실패: 번역 결과를 받지 못했습니다.', failDefault:'⚠️ 번역 실패: ', languageNames:['한국어','대만어 (繁體中文)','일본어 (日本語)','영어 (English)'], buttonLanguage:'🌐 한국어 ▼', languageTitle:'화면 언어 선택', created:'생성', passwordPrompt:'비밀번호 입력' },
+    zh: { title:'AI 翻譯聊天室', subtitle:'選擇聊天室或建立新聊天室。', create:'新增聊天室', list:'聊天室列表', search:'搜尋聊天室', loading:'正在載入聊天室...', noRooms:'目前沒有聊天室，請建立一個。', roomName:'聊天室名稱', createTitle:'建立新聊天室', usePassword:'使用密碼', passwordHint:'可選擇為聊天室設定密碼。', password:'密碼', make:'建立', cancel:'取消', enter:'進入', enterTitle:'輸入密碼', enterDesc:'請輸入密碼以進入聊天室。', wrongPassword:'密碼錯誤。', roomSettings:'聊天室設定', passwordOn:'已啟用密碼', passwordOff:'未使用密碼', chooseAction:'選擇設定', enable:'啟用密碼', disable:'關閉密碼', change:'變更密碼', currentPassword:'目前密碼', newPassword:'新密碼', save:'儲存', needPassword:'請輸入密碼。', roomCreated:'聊天室已建立。', passwordUpdated:'密碼設定已更新。', needCurrent:'請輸入目前密碼。', wrongCurrent:'目前密碼錯誤。', roomNameRequired:'請輸入聊天室名稱。', roomNameTooLong:'聊天室名稱最多 40 個字元。', passwordRequired:'請輸入新密碼。', roomListButton:'列表', noSearchResults:'沒有搜尋結果。', welcome:'已連線至聊天室，開始聊天吧！', myId:'我的 ID：', changeId:'使用者 ID 設定', idLabel:'請輸入要使用的 ID', idPlaceholder:'例如：小明、Alex...', mic:'語音輸入', send:'傳送', inputPlaceholder:'輸入訊息', listening:'正在辨識語音...', translating:'AI 翻譯中...', me:'我', source:'輸入：', target:'翻譯：', failNotFound:'⚠️ 翻譯失敗：找不到翻譯伺服器。', failLimit:'⚠️ 翻譯失敗：API 使用量已達上限。', failServer:'⚠️ 翻譯失敗：AI 伺服器繁忙。', failTimeout:'⚠️ 翻譯失敗：AI 回應逾時。', failConnection:'⚠️ 翻譯失敗：請檢查伺服器連線。', failEmpty:'⚠️ 翻譯失敗：未收到翻譯結果。', failDefault:'⚠️ 翻譯失敗：', languageNames:['韓語','台灣中文（繁體）','日語','英語'], buttonLanguage:'🌐 繁體中文 ▼', languageTitle:'選擇介面語言', created:'建立', passwordPrompt:'輸入密碼' },
+    ja: { title:'AI翻訳チャットルーム', subtitle:'チャットルームを選択するか、新しく作成してください。', create:'新しい部屋', list:'チャットルーム一覧', search:'チャットルームを検索', loading:'チャットルームを読み込み中...', noRooms:'チャットルームがありません。新しく作成してください。', roomName:'チャットルーム名', createTitle:'新しいチャットルーム', usePassword:'パスワードを使用', passwordHint:'必要に応じてパスワードを設定できます。', password:'パスワード', make:'作成', cancel:'キャンセル', enter:'入室', enterTitle:'パスワードを入力', enterDesc:'入室するにはパスワードを入力してください。', wrongPassword:'パスワードが違います。', roomSettings:'ルーム設定', passwordOn:'パスワード設定あり', passwordOff:'パスワード設定なし', chooseAction:'設定を選択', enable:'パスワードを有効にする', disable:'パスワードを無効にする', change:'パスワードを変更', currentPassword:'現在のパスワード', newPassword:'新しいパスワード', save:'保存', needPassword:'パスワードを入力してください。', roomCreated:'チャットルームを作成しました。', passwordUpdated:'パスワード設定を更新しました。', needCurrent:'現在のパスワードを入力してください。', wrongCurrent:'現在のパスワードが違います。', roomNameRequired:'チャットルーム名を入力してください。', roomNameTooLong:'ルーム名は40文字以内で入力してください。', passwordRequired:'新しいパスワードを入力してください。', roomListButton:'一覧', noSearchResults:'検索結果がありません。', welcome:'チャットルームに接続しました。会話を始めましょう！', myId:'自分のID：', changeId:'ユーザーID設定', idLabel:'使用するIDを入力してください', idPlaceholder:'例：太郎、Alex...', mic:'音声入力', send:'送信', inputPlaceholder:'メッセージ入力', listening:'音声を認識しています...', translating:'AI翻訳中...', me:'自分', source:'入力：', target:'翻訳：', failNotFound:'⚠️ 翻訳失敗：翻訳サーバーが見つかりません。', failLimit:'⚠️ 翻訳失敗：API使用量制限を超えました。', failServer:'⚠️ 翻訳失敗：AIサーバーが混雑しています。', failTimeout:'⚠️ 翻訳失敗：AI応答がタイムアウトしました。', failConnection:'⚠️ 翻訳失敗：サーバー接続を確認してください。', failEmpty:'⚠️ 翻訳失敗：翻訳結果を取得できませんでした。', failDefault:'⚠️ 翻訳失敗：', languageNames:['韓国語','台湾中国語（繁体字）','日本語','英語'], buttonLanguage:'🌐 日本語 ▼', languageTitle:'画面言語を選択', created:'作成', passwordPrompt:'パスワード入力' },
+    en: { title:'AI Translation Chat', subtitle:'Choose a chat room or create a new one.', create:'New room', list:'Chat rooms', search:'Search rooms', loading:'Loading chat rooms...', noRooms:'No chat rooms yet. Create one to get started.', roomName:'Room name', createTitle:'Create a chat room', usePassword:'Use a password', passwordHint:'Add a password if you want to restrict casual access.', password:'Password', make:'Create', cancel:'Cancel', enter:'Enter', enterTitle:'Enter password', enterDesc:'Enter the password to join this room.', wrongPassword:'Incorrect password.', roomSettings:'Room settings', passwordOn:'Password enabled', passwordOff:'No password', chooseAction:'Setting', enable:'Enable password', disable:'Disable password', change:'Change password', currentPassword:'Current password', newPassword:'New password', save:'Save', needPassword:'Please enter a password.', roomCreated:'Chat room created.', passwordUpdated:'Password settings updated.', needCurrent:'Please enter the current password.', wrongCurrent:'The current password is incorrect.', roomNameRequired:'Please enter a room name.', roomNameTooLong:'Room names must be 40 characters or fewer.', passwordRequired:'Please enter a new password.', roomListButton:'Rooms', noSearchResults:'No search results.', welcome:'Connected to the chat room. Start a conversation!', myId:'My ID:', changeId:'User ID Settings', idLabel:'Enter the ID you want to use', idPlaceholder:'e.g. Alex, John...', mic:'Voice input', send:'Send', inputPlaceholder:'Type a message', listening:'Listening to your voice...', translating:'AI translating...', me:'Me', source:'Input:', target:'Translate:', failNotFound:'⚠️ Translation failed: Translation server not found.', failLimit:'⚠️ Translation failed: API usage limit exceeded.', failServer:'⚠️ Translation failed: AI server is busy.', failTimeout:'⚠️ Translation failed: AI response timed out.', failConnection:'⚠️ Translation failed: Please check your server connection.', failEmpty:'⚠️ Translation failed: No translation result received.', failDefault:'⚠️ Translation failed: ', languageNames:['Korean','Traditional Chinese (Taiwan)','Japanese','English'], buttonLanguage:'🌐 English ▼', languageTitle:'Select interface language', created:'Created', passwordPrompt:'Enter password' }
   };
 
   // 화면 언어별 추가 문구 (목록 수정 모드, 삭제 창, 알림창 등)
@@ -258,8 +262,10 @@
   let activeRoomRef = null;
   let messagesListener = null;
   let allRooms = {};
+  let directoryLive = false;          // true면 allRooms가 서버에서 받은 최신 데이터 (캐시 아님)
+  const translatingKeys = new Set();  // 지금 번역 중인 내 메시지 key
+  let initialBuffer = null;           // 방 입장 시 처음 불러온 메시지를 모았다가 한 번에 붙이는 임시 공간
   let pendingEntryMeta = null;
-  let isSending = false;
   let isRecording = false;
   let isManualStop = false;
   let recognition = null;
@@ -319,9 +325,35 @@
   const lastReadStorageKey = id => 'lastRead:' + (isLocal ? 'local:' : 'prod:') + id;
   function readLastRead(id) { try { return localStorage.getItem(lastReadStorageKey(id)); } catch (error) { return null; } }
   function writeLastRead(id, key) { try { localStorage.setItem(lastReadStorageKey(id), key); } catch (error) {} }
+  // 목록 캐시: 다음 접속 때 서버 응답을 기다리지 않고 지난번 목록을 바로 보여준다. (비밀번호 값은 저장하지 않는다)
+  const roomListCacheKey = 'roomListCache:' + (isLocal ? 'local' : 'prod');
+  function saveRoomListCache() {
+    try {
+      const rooms = {}, summaries = {};
+      Object.keys(allRooms).forEach(id => {
+        const r = allRooms[id];
+        if (!r || !r.id || !r.name || r.id === '__meta') return;
+        rooms[id] = { id: r.id, name: r.name, icon: r.icon, color: r.color, createdAt: r.createdAt, legacy: r.legacy, password: r.password ? true : '' };
+        const sm = roomSummaries[id];
+        if (sm && sm.loaded) summaries[id] = { loaded: true, key: sm.key, sender: sm.sender, text: r.password ? '' : sm.text, timestamp: sm.timestamp, unread: sm.unread || 0 };
+      });
+      localStorage.setItem(roomListCacheKey, JSON.stringify({ rooms, summaries }));
+    } catch (error) {}
+  }
+  function loadRoomListCache() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(roomListCacheKey) || 'null');
+      if (!cached || !cached.rooms || !Object.keys(cached.rooms).length) return;
+      allRooms = cached.rooms;
+      Object.assign(roomSummaries, cached.summaries || {});
+      syncRoomWatchers();
+      renderRoomList();
+      updateLobbyTitle();
+    } catch (error) {}
+  }
   function scheduleRoomListRender() {
     clearTimeout(listRenderTimer);
-    listRenderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); }, 30);
+    listRenderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); saveRoomListCache(); }, 30);
   }
   function updateLobbyTitle() {
     if (activeRoomId) return;
@@ -390,7 +422,7 @@
     setText('roomEditToggleText', listEditMode ? labels.done : labels.edit);
     $('roomEditToggleIcon').className = 'fa-solid ' + (listEditMode ? 'fa-check' : 'fa-pen') + ' mr-1';
     const query = (els.roomSearchInput.value || '').trim().toLocaleLowerCase();
-    let rows = Object.values(allRooms).filter(room => room && room.id && room.name && room.id !== '__meta' && !(isLocal && room.id === 'testroom' && room.legacy));
+    let rows = Object.values(allRooms).filter(room => room && room.id && room.name && room.id !== '__meta');
     // 카카오톡처럼 최근에 대화가 있었던 방이 위로 온다. (대화가 없으면 만든 시각 기준)
     const activityOf = room => Number((roomSummaries[room.id] && roomSummaries[room.id].timestamp) || room.createdAt || 0);
     rows.sort((a, b) => activityOf(b) - activityOf(a));
@@ -427,70 +459,16 @@
     }).join('');
   }
 
-  async function copyRoomLogs(sourcePath, destinationPath) {
-    // 원본은 삭제하지 않는다. roomLog에 같은 방 기록이 이미 있으면 덮어쓰지 않는다.
-    const sourceSnapshot = await database.ref(sourcePath).once('value');
-    if (!sourceSnapshot.exists()) return;
-    const rooms = sourceSnapshot.val() || {};
-    for (const roomId of Object.keys(rooms)) {
-      const sourceRoom = rooms[roomId];
-      if (roomId === '__meta' || sourceRoom == null) continue;
-      const destinationRef = database.ref(destinationPath + '/' + roomId);
-      const destinationSnapshot = await destinationRef.once('value');
-      if (!destinationSnapshot.exists()) {
-        await destinationRef.set(sourceRoom);
-      }
-    }
-  }
-
-  async function ensureLegacyRoom() {
-    // 로컬 데이터와 배포 데이터는 서로 섞지 않는다.
-    if (isLocal) {
-      // 과거 로컬 저장 경로 local/rooms 전체를 local/roomLog로 복사한다.
-      await copyRoomLogs('local/rooms', 'local/roomLog');
-      // 초기 버전에서 devroom을 루트 rooms에 저장했던 경우만 로컬 경로로 복사한다.
-      const oldRoomId = 'devroom';
-      const oldMetaRef = database.ref('roomDirectory/' + oldRoomId);
-      const newMetaRef = directoryRef.child(oldRoomId);
-      const [oldMetaSnap, newMetaSnap] = await Promise.all([oldMetaRef.once('value'), newMetaRef.once('value')]);
-      if (oldMetaSnap.exists() && !newMetaSnap.exists()) await newMetaRef.set(oldMetaSnap.val());
-      const oldMessagesRef = database.ref('rooms/' + oldRoomId);
-      const newMessagesRef = database.ref('local/roomLog/' + oldRoomId);
-      const [oldMessagesSnap, newMessagesSnap] = await Promise.all([oldMessagesRef.once('value'), newMessagesRef.once('value')]);
-      if (oldMessagesSnap.exists() && !newMessagesSnap.exists()) await newMessagesRef.set(oldMessagesSnap.val());
-      return;
-    }
-
-    // 배포 환경의 기존 rooms 전체 기록을 roomLog로 복사한다. 기존 rooms는 안전을 위해 유지한다.
-    await copyRoomLogs('rooms', 'roomLog');
-    const legacyRef = directoryRef.child('testroom');
-    const snapshot = await legacyRef.once('value');
-    if (!snapshot.exists()) {
-      await legacyRef.set({ id: 'testroom', name: 'testroom', password: null, createdAt: 1, legacy: true, initialNoPasswordApplied: true });
-    } else if (!snapshot.val().initialNoPasswordApplied) {
-      await legacyRef.update({
-        id: snapshot.val().id || 'testroom',
-        name: snapshot.val().name || 'testroom',
-        password: null,
-        legacy: true,
-        initialNoPasswordApplied: true
-      });
-    }
-  }
-
   async function loadRoomList() {
+    loadRoomListCache();
     try {
-      // 옛 데이터 이전은 이 기기에서 한 번만 실행한다. 실패해도 목록 표시는 계속한다.
-      const migrationKey = 'legacyMigrationDone:' + (isLocal ? 'local' : 'prod');
-      if (!localStorage.getItem(migrationKey)) {
-        try { await ensureLegacyRoom(); localStorage.setItem(migrationKey, '1'); }
-        catch (migrationError) { console.error('Legacy migration failed:', migrationError); }
-      }
       directoryRef.on('value', snapshot => {
         allRooms = snapshot.val() || {};
+        directoryLive = true;
         syncRoomWatchers();
         renderRoomList();
         updateLobbyTitle();
+        saveRoomListCache();
       }, error => {
         els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`;
       });
@@ -518,7 +496,7 @@
     if (isRecording) els.micBtn.click();
     if (activeRoomId && roomSummaries[activeRoomId]) roomSummaries[activeRoomId].unread = 0;
     activeRoomId = null; activeRoomMeta = null; activeRoomRef = null;
-    historyReady = false; hiddenUnread = 0;
+    historyReady = false; hiddenUnread = 0; initialBuffer = null;
     els.chatContainer.innerHTML = '';
   }
 
@@ -542,20 +520,8 @@
     els.chatApp.classList.remove('hidden');
     closeModal(els.entryModal);
     document.title = baseTitle;
-    // 새 저장 위치는 roomLog. 옛 rooms에 기록이 있으면 roomLog가 비어 있을 때만 복사한다.
-    // 비어 있는지만 알면 되므로 메시지 1개만 확인한다. (대화 전체를 받지 않는다)
-    const newLogPath = dataPrefix + 'roomLog/' + activeRoomId;
-    const legacyLogPath = (isLocal && activeRoomId === 'devroom') ? 'rooms/' + activeRoomId : dataPrefix + 'rooms/' + activeRoomId;
-    try {
-      const newLogSnapshot = await database.ref(newLogPath).limitToFirst(1).once('value');
-      if (seq !== enterSeq) return;
-      if (!newLogSnapshot.exists()) {
-        const legacyLogSnapshot = await database.ref(legacyLogPath).once('value');
-        if (legacyLogSnapshot.exists()) await database.ref(newLogPath).set(legacyLogSnapshot.val());
-        if (seq !== enterSeq) return;
-      }
-    } catch (error) { console.error('Legacy log check failed:', error); }
-    activeRoomRef = database.ref(newLogPath);
+    activeRoomRef = database.ref(dataPrefix + 'roomLog/' + activeRoomId);
+    initialBuffer = document.createDocumentFragment();
     els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
     lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
     oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
@@ -577,6 +543,8 @@
       hasMoreMessages = initial.numChildren() >= PAGE_SIZE;
     } catch (error) { console.error('Initial load failed:', error); }
     if (seq !== enterSeq) return;
+    // 처음 불러온 메시지를 한 번에 화면에 붙인다.
+    if (initialBuffer) { els.chatContainer.appendChild(initialBuffer); initialBuffer = null; }
     historyReady = true;
     updateLoadMoreButton(); maybeMarkRead(); scrollChatToBottom();
   }
@@ -600,14 +568,18 @@
       return;
     }
     try {
-      const snapshot = await directoryRef.child(roomId).once('value');
-      if (!snapshot.exists()) {
-        // 없는 방 주소로 들어오면 방을 만들지 않고 목록으로 돌려보낸다.
-        alert(xt().roomNotFound);
-        leaveToLobby();
-        return;
+      // 목록에서 이미 최신 방 정보를 받아 둔 경우에는 서버에 다시 묻지 않는다.
+      let meta = (directoryLive && allRooms[roomId] && allRooms[roomId].id) ? Object.assign({}, allRooms[roomId]) : null;
+      if (!meta) {
+        const snapshot = await directoryRef.child(roomId).once('value');
+        if (!snapshot.exists()) {
+          // 없는 방 주소로 들어오면 방을 만들지 않고 목록으로 돌려보낸다.
+          alert(xt().roomNotFound);
+          leaveToLobby();
+          return;
+        }
+        meta = snapshot.val();
       }
-      const meta = snapshot.val();
       if (new URLSearchParams(window.location.search).get('room') !== roomId) return; // 기다리는 사이 다른 화면으로 이동함
       if (!meta.password) {
         await enterRoom(meta);
@@ -897,17 +869,19 @@
 
   function showStatus(message) { clearTimeout(statusTimer); els.statusText.textContent = message; els.statusNotice.classList.remove('hidden'); els.statusNotice.classList.add('flex'); }
   function hideStatus() { els.statusNotice.classList.add('hidden'); els.statusNotice.classList.remove('flex'); }
-  async function translateText(text) {
+  async function translateText(text, options = {}) {
     const tx = t();
     const targetLang = langMap[els.targetLangSelect.value] || 'English';
+    const silent = !!options.silent; // 말풍선에 '번역 중'이 보일 때는 상단 알림을 쓰지 않는다.
+    const done = () => { if (!silent) hideStatus(); };
     try {
-      showStatus(tx.translating);
+      if (!silent) showStatus(tx.translating);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 30000);
       let response;
       try { response = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ text, targetLang }), signal:controller.signal }); }
       finally { clearTimeout(timer); }
-      hideStatus();
+      done();
       if (!response.ok) {
         if (response.status === 404) return { ok:false, reason: tx.failNotFound };
         if (response.status === 429) return { ok:false, reason: tx.failLimit };
@@ -918,7 +892,7 @@
       const data = await response.json();
       return data.translated ? { ok:true, text: data.translated } : { ok:false, reason: tx.failEmpty };
     } catch (error) {
-      hideStatus();
+      done();
       if (error.name === 'AbortError') return { ok:false, reason: tx.failTimeout };
       console.error('Translation error:', error);
       return { ok:false, reason: tx.failConnection };
@@ -926,19 +900,27 @@
   }
 
   async function sendMessage(text) {
-    if (!activeRoomRef || !text || !text.trim() || isSending) return;
+    if (!activeRoomRef || !text || !text.trim()) return;
     const cleanText = text.trim();
-    isSending = true; els.sendBtn.disabled = true;
-    try {
-      const result = await translateText(cleanText);
-      if (!result.ok) {
-        // 번역에 실패하면 실패 문구를 대화에 저장하지 않고, 원문만 보낸 뒤 잠깐 알려 준다.
-        showStatus(result.reason + ' ' + xt().sentWithoutTranslation);
-        statusTimer = setTimeout(hideStatus, 5000);
-      }
-      await activeRoomRef.push({ sender:myUserId, text:cleanText, translatedText: result.ok ? result.text : null, timestamp:Date.now() });
-    } catch (error) { console.error('Could not send message:', error); alert(xt().sendFail); }
-    finally { isSending = false; els.sendBtn.disabled = false; }
+    // 원문을 먼저 보내 바로 화면에 보이게 하고, 번역은 동시에 진행한 뒤 같은 메시지에 채워 넣는다.
+    const msgRef = activeRoomRef.push();
+    const key = msgRef.key;
+    const data = { sender:myUserId, text:cleanText, translatedText:null, timestamp:Date.now() };
+    translatingKeys.add(key);
+    const savePromise = msgRef.set(data);
+    const result = await translateText(cleanText, { silent:true });
+    translatingKeys.delete(key);
+    try { await savePromise; }
+    catch (error) { console.error('Could not send message:', error); alert(xt().sendFail); return; }
+    if (result.ok) {
+      try { await msgRef.update({ translatedText: result.text }); }
+      catch (error) { console.error('Could not save translation:', error); updateMessageElement(key, data); }
+    } else {
+      // 번역에 실패하면 원문만 남기고 '다시 번역' 버튼을 보여 준다.
+      updateMessageElement(key, data);
+      showStatus(result.reason + ' ' + xt().sentWithoutTranslation);
+      clearTimeout(statusTimer); statusTimer = setTimeout(hideStatus, 5000);
+    }
   }
   $('sendBtn').addEventListener('click', async () => {
     const val = els.textInput.value.trim(); if (!val) return;
@@ -957,11 +939,14 @@
   }
   function scrollChatToBottom() { requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; }); }); }
 
-  function fillBubble(bubble, data, isMine) {
+  function fillBubble(bubble, data, isMine, key) {
     const x = xt();
     let html = `<div class="text-xs md:text-sm ${isMine ? 'text-indigo-200' : 'text-slate-400'} font-normal break-words leading-relaxed">${safeHtml(data.text || '')}</div>`;
     if (data.translatedText) {
       html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
+    } else if (isMine && key && translatingKeys.has(key)) {
+      // 방금 보낸 메시지는 번역이 끝날 때까지 '번역 중'을 보여 준다.
+      html += `<div class="mt-1.5 text-xs text-indigo-100 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin text-[10px]"></i><span>${safeHtml(t().translating)}</span></div>`;
     } else if (isMine) {
       // 내 메시지인데 번역이 없으면(번역 실패) 다시 번역할 수 있다.
       html += `<div class="mt-1.5"><button type="button" class="retry-translate-btn inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition"><i class="fa-solid fa-rotate-right text-[10px]"></i><span>${safeHtml(x.retryTranslate)}</span></button></div>`;
@@ -977,7 +962,7 @@
     const sender = document.createElement('span'); sender.className = 'text-xs font-semibold text-slate-600 mb-1 px-1'; sender.textContent = isMine ? tx.me : (data.sender || '');
     const row = document.createElement('div'); row.className = `flex items-end gap-1.5 w-full ${isMine ? 'justify-end' : 'justify-start'}`;
     const bubble = document.createElement('div'); bubble.className = (isMine ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm') + ' msg-bubble';
-    fillBubble(bubble, data, isMine);
+    fillBubble(bubble, data, isMine, key);
     const time = document.createElement('span'); time.className = 'text-[10px] text-slate-400 whitespace-nowrap shrink-0 pb-0.5'; time.dataset.messageTimestamp = String(data.timestamp || ''); time.textContent = formatMessageTime(data.timestamp);
     if (isMine) { row.appendChild(time); row.appendChild(bubble); } else { row.appendChild(bubble); row.appendChild(time); }
     wrap.appendChild(sender); wrap.appendChild(row);
@@ -996,22 +981,26 @@
     const stick = !historyReady || isMine || (box.scrollHeight - box.scrollTop - box.clientHeight < 160);
     const wrap = buildMessageElement(data, key);
     const stamp = Number(data.timestamp);
+    // 입장 직후 처음 불러오는 동안에는 임시 공간에 모아 두었다가 한 번에 붙인다.
+    const target = (!historyReady && initialBuffer) ? initialBuffer : box;
     if (stamp) {
       const s = timeSettings();
       const dayKey = dateKeyOf(stamp, s);
-      if (dayKey !== lastDateKey) { box.appendChild(makeDateSeparator(stamp, s)); lastDateKey = dayKey; }
+      if (dayKey !== lastDateKey) { target.appendChild(makeDateSeparator(stamp, s)); lastDateKey = dayKey; }
     }
-    box.appendChild(wrap);
-    if (stick) scrollChatToBottom();
+    target.appendChild(wrap);
+    if (stick && target === box) scrollChatToBottom();
     if (options.live && !isMine && document.hidden) { hiddenUnread++; updateChatTitle(); }
     if (historyReady) maybeMarkRead();
   }
   function updateMessageElement(key, data) {
     messageStore.set(key, data);
-    const wrap = Array.from(els.chatContainer.querySelectorAll('[data-chat-message="true"]')).find(node => node.dataset.key === key);
+    // 아직 임시 공간에 있는 메시지도 찾을 수 있게 둘 다 확인한다.
+    const selector = '[data-chat-message="true"][data-key="' + String(key).replace(/["\\]/g, '\\$&') + '"]';
+    const wrap = els.chatContainer.querySelector(selector) || (initialBuffer && initialBuffer.querySelector(selector));
     if (!wrap) return;
     const bubble = wrap.querySelector('.msg-bubble');
-    if (bubble) fillBubble(bubble, data, data.sender === myUserId);
+    if (bubble) fillBubble(bubble, data, data.sender === myUserId, key);
   }
   function updateLoadMoreButton() {
     const wrap = $('loadMoreWrap'), btn = $('loadMoreBtn');
