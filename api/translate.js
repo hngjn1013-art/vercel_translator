@@ -69,7 +69,11 @@ async function* geminiStream({ model, systemPrompt, userText, signal }) {
     signal
   });
 
-  if (!response.ok) throw new ProviderError("Gemini API error", response.status);
+  if (!response.ok) {
+    // 실패 원인을 로그에서 알 수 있도록 상태 번호와 오류 내용 앞부분을 함께 남긴다.
+    const detail = (await response.text().catch(() => "")).slice(0, 200);
+    throw new ProviderError(`Gemini API error ${response.status} (${model}): ${detail}`, response.status);
+  }
 
   for await (const data of readSse(response)) {
     const json = JSON.parse(data);
