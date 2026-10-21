@@ -1,6 +1,11 @@
 
-// 첫 글자가 이 시간 안에 안 오면 같은 요청을 한 번 더 동시에 보낸다.
-const FIRST_TOKEN_TIMEOUT_MS = 4000;
+// 요청 순서: 1차 → (4초 안에 첫 글자가 없으면) 2차 동시 요청 → (그 뒤 5초 안에 없으면) 3차 동시 요청
+// 먼저 첫 글자를 주는 쪽을 쓰고 나머지는 취소한다. 3차만 다른 모델을 쓴다.
+const ATTEMPTS = [
+  { model: "gemini-3.5-flash-lite", nextAfterMs: 4000 },
+  { model: "gemini-3.5-flash-lite", nextAfterMs: 5000 },
+  { model: "gemini-3.1-flash-lite", nextAfterMs: null }
+];
 // 첫 글자를 기다리는 최대 시간(여러 번 시도한 시간을 모두 합친 것)
 const TOTAL_TIMEOUT_MS = 30000;
 // 글자가 오다가 이 시간 동안 아무것도 안 오면 끊는다. (글자가 계속 오는 동안은 끊지 않는다)
@@ -35,8 +40,7 @@ async function* readSse(response) {
   if (buffer.startsWith("data:")) yield buffer.slice(5).trim();
 }
 
-async function* geminiStream({ systemPrompt, userText, signal }) {
-  const model = "gemini-3.5-flash-lite";
+async function* geminiStream({ model, systemPrompt, userText, signal }) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
@@ -147,7 +151,7 @@ module.exports = async function (req, res) {
     const remainingMs = () => TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
 
     // 요청 하나를 시작한다. 첫 글자가 오면 { attempt, first }로 이행되고, 실패하면 에러로 거부된다.
-    const launch = () => {
+    const launch = ({ model }) => {
       const controller = new AbortController();
       const attempt = { controller, timeoutId: null };
       attempt.arm = ms => {
@@ -157,6 +161,7 @@ module.exports = async function (req, res) {
       attempt.arm(remainingMs());
 
       attempt.iterator = geminiStream({
+        model,
         systemPrompt,
         userText,
         signal: controller.signal
@@ -171,32 +176,41 @@ module.exports = async function (req, res) {
       return attempt;
     };
 
-    // 1차 요청을 보내고, 4초 안에 첫 글자가 안 오면 1차를 그대로 둔 채 2차도 동시에 보낸다.
-    // 먼저 첫 글자를 준 쪽을 쓰고 나머지는 취소한다.
-    const MAX_ATTEMPTS = 2;
-    const pending = new Set([launch()]);
-    let launched = 1;
+    // 이전 요청들을 그대로 둔 채 다음 요청을 동시에 보낸다.
+    const pending = new Set();
+    let launched = 0;
     let lastError = null;
     let winner = null;
 
     let hedgeTimerId;
-    let hedgeWaiting = true;
-    const hedgeTimer = new Promise(resolve => {
-      hedgeTimerId = setTimeout(() => resolve({ hedge: true }), FIRST_TOKEN_TIMEOUT_MS);
-    });
+    let hedgeTimer = null;
+    const launchNext = () => {
+      clearTimeout(hedgeTimerId);
+      hedgeTimer = null;
+
+      const config = ATTEMPTS[launched];
+      pending.add(launch(config));
+      launched++;
+
+      // 이 요청의 첫 글자가 늦으면 다음 요청을 보내기 위한 타이머
+      if (config.nextAfterMs !== null) {
+        hedgeTimer = new Promise(resolve => {
+          hedgeTimerId = setTimeout(() => resolve({ hedge: true }), config.nextAfterMs);
+        });
+      }
+    };
+
+    launchNext();
 
     while (pending.size > 0) {
       const waiting = [...pending].map(attempt => attempt.result);
-      if (hedgeWaiting) waiting.push(hedgeTimer);
+      if (hedgeTimer) waiting.push(hedgeTimer);
 
       const event = await Promise.race(waiting);
 
       if (event.hedge) {
-        hedgeWaiting = false;
-        if (launched < MAX_ATTEMPTS && remainingMs() > 0) {
-          pending.add(launch());
-          launched++;
-        }
+        if (remainingMs() > 0) launchNext();
+        else hedgeTimer = null;
         continue;
       }
 
@@ -214,11 +228,7 @@ module.exports = async function (req, res) {
       // 한도 초과(429)일 때는 다시 보내도 소용없으니 포기한다.
       if (event.error.status === 429) break;
 
-      if (launched < MAX_ATTEMPTS && remainingMs() > 0) {
-        hedgeWaiting = false;
-        pending.add(launch());
-        launched++;
-      }
+      if (launched < ATTEMPTS.length && remainingMs() > 0) launchNext();
     }
 
     clearTimeout(hedgeTimerId);
