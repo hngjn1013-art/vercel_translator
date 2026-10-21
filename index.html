@@ -265,6 +265,7 @@
   let allRooms = {};
   let directoryLive = false;          // true면 allRooms가 서버에서 받은 최신 데이터 (캐시 아님)
   const translatingKeys = new Set();  // 지금 번역 중인 내 메시지 key
+  const streamingText = new Map();    // 번역 중인 메시지 key -> 지금까지 도착한 번역
   let initialBuffer = null;           // 방 입장 시 처음 불러온 메시지를 모았다가 한 번에 붙이는 임시 공간
   let pendingEntryMeta = null;
   let isRecording = false;
@@ -878,20 +879,40 @@
     try {
       if (!silent) showStatus(tx.translating);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
-      let response;
-      try { response = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ text, targetLang }), signal:controller.signal }); }
-      finally { clearTimeout(timer); }
-      done();
-      if (!response.ok) {
-        if (response.status === 404) return { ok:false, reason: tx.failNotFound };
-        if (response.status === 429) return { ok:false, reason: tx.failLimit };
-        if (response.status === 504) return { ok:false, reason: tx.failTimeout };
-        if ([500,502,503].includes(response.status)) return { ok:false, reason: tx.failServer };
-        return { ok:false, reason: tx.failDefault + 'Error (' + response.status + ')' };
-      }
-      const data = await response.json();
-      return data.translated ? { ok:true, text: data.translated } : { ok:false, reason: tx.failEmpty };
+      const timer = setTimeout(() => controller.abort(), 35000);
+      try {
+        const response = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ text, targetLang }), signal:controller.signal });
+        done();
+        if (!response.ok) {
+          if (response.status === 404) return { ok:false, reason: tx.failNotFound };
+          if (response.status === 429) return { ok:false, reason: tx.failLimit };
+          if (response.status === 504) return { ok:false, reason: tx.failTimeout };
+          if ([500,502,503].includes(response.status)) return { ok:false, reason: tx.failServer };
+          return { ok:false, reason: tx.failDefault + 'Error (' + response.status + ')' };
+        }
+        // 서버가 번역을 조각조각 보내 준다. 한 줄마다 JSON이고, done이 와야 성공이다.
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '', translated = '', finished = false;
+        const handleLine = line => {
+          if (!line.trim()) return;
+          const msg = JSON.parse(line);
+          if (msg.d) { translated += msg.d; if (options.onPartial) options.onPartial(translated); }
+          if (msg.done) finished = true;
+        };
+        while (true) {
+          const { done: end, value } = await reader.read();
+          if (end) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          lines.forEach(handleLine);
+        }
+        handleLine(buffer);
+        translated = translated.trim();
+        if (!finished) return { ok:false, reason: tx.failServer };
+        return translated ? { ok:true, text: translated } : { ok:false, reason: tx.failEmpty };
+      } finally { clearTimeout(timer); }
     } catch (error) {
       done();
       if (error.name === 'AbortError') return { ok:false, reason: tx.failTimeout };
@@ -909,8 +930,10 @@
     const data = { sender:myUserId, text:cleanText, translatedText:null, timestamp:Date.now() };
     translatingKeys.add(key);
     const savePromise = msgRef.set(data);
-    const result = await translateText(cleanText, { silent:true });
+    // 번역이 도착하는 대로 내 말풍선에 바로 채워 보여 준다.
+    const result = await translateText(cleanText, { silent:true, onPartial: partial => { streamingText.set(key, partial); updateMessageElement(key, data); scrollChatToBottom(); } });
     translatingKeys.delete(key);
+    streamingText.delete(key);
     try { await savePromise; }
     catch (error) { console.error('Could not send message:', error); alert(xt().sendFail); return; }
     if (result.ok) {
@@ -946,8 +969,12 @@
     if (data.translatedText) {
       html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
     } else if (isMine && key && translatingKeys.has(key)) {
-      // 방금 보낸 메시지는 번역이 끝날 때까지 '번역 중'을 보여 준다.
-      html += `<div class="mt-1.5 text-xs text-indigo-100 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin text-[10px]"></i><span>${safeHtml(t().translating)}</span></div>`;
+      // 방금 보낸 메시지는 번역이 끝날 때까지 '번역 중'을 보여 주고, 도착한 번역은 먼저 채워 넣는다.
+      if (streamingText.get(key)) {
+        html += `<div class="mt-1 pt-1 border-t border-indigo-500/50 text-white text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="min-w-0 flex-1">${safeHtml(streamingText.get(key))}</span></div>`;
+      } else {
+        html += `<div class="mt-1.5 text-xs text-indigo-100 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin text-[10px]"></i><span>${safeHtml(t().translating)}</span></div>`;
+      }
     } else if (isMine) {
       // 내 메시지인데 번역이 없으면(번역 실패) 다시 번역할 수 있다.
       html += `<div class="mt-1.5"><button type="button" class="retry-translate-btn inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition"><i class="fa-solid fa-rotate-right text-[10px]"></i><span>${safeHtml(x.retryTranslate)}</span></button></div>`;
