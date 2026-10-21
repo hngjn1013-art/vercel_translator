@@ -212,7 +212,6 @@
   'use strict';
 
   const params = new URLSearchParams(window.location.search);
-  const requestedRoomId = params.get('room');
   const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname === '[::1]';
   // 로컬 개발 데이터는 local/* 아래에 저장한다. 채팅 기록은 roomLog에 저장하며, 기존 rooms 데이터는 필요할 때 복사한다.
   const dataPrefix = isLocal ? 'local/' : '';
@@ -500,8 +499,27 @@
     }
   }
 
+  // 페이지를 새로 불러오지 않고 화면만 바꾼다. (Firebase 연결·목록 데이터를 그대로 재사용)
+  let lobbyLoaded = false, enterSeq = 0;
+  function navigateToRoom(id) {
+    history.pushState({ fromLobby: true }, '', window.location.pathname + '?room=' + encodeURIComponent(id));
+    routeIntoRequestedRoom();
+  }
   function leaveToLobby() {
-    window.location.href = window.location.pathname;
+    // 목록에서 들어온 방이면 '뒤로 가기'와 같게 처리해 방문 기록이 쌓이지 않게 한다.
+    if (history.state && history.state.fromLobby) { history.back(); return; }
+    history.replaceState(null, '', window.location.pathname);
+    routeIntoRequestedRoom();
+  }
+  window.addEventListener('popstate', () => routeIntoRequestedRoom());
+  function closeActiveRoom() {
+    enterSeq++; // 진행 중이던 입장 작업은 무시한다.
+    if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); messagesQuery = null; }
+    if (isRecording) els.micBtn.click();
+    if (activeRoomId && roomSummaries[activeRoomId]) roomSummaries[activeRoomId].unread = 0;
+    activeRoomId = null; activeRoomMeta = null; activeRoomRef = null;
+    historyReady = false; hiddenUnread = 0;
+    els.chatContainer.innerHTML = '';
   }
 
   function showEntryPrompt(meta) {
@@ -514,21 +532,30 @@
   }
 
   async function enterRoom(meta) {
+    closeActiveRoom();
+    const seq = enterSeq;
     activeRoomId = meta.id;
     activeRoomMeta = meta;
-    // 新しい保存先は roomLog。旧 rooms に履歴がある場合は、移行先が空のときだけコピーして履歴を維持する。
-    const newLogPath = dataPrefix + 'roomLog/' + activeRoomId;
-    const legacyLogPath = (isLocal && activeRoomId === 'devroom') ? 'rooms/' + activeRoomId : dataPrefix + 'rooms/' + activeRoomId;
-    const newLogSnapshot = await database.ref(newLogPath).once('value');
-    if (!newLogSnapshot.exists()) {
-      const legacyLogSnapshot = await database.ref(legacyLogPath).once('value');
-      if (legacyLogSnapshot.exists()) await database.ref(newLogPath).set(legacyLogSnapshot.val());
-    }
-    activeRoomRef = database.ref(newLogPath);
+    // 화면은 먼저 바꿔서 누르자마자 반응하게 한다.
     $('currentRoomName').textContent = meta.name || meta.id;
     els.lobbyScreen.classList.add('hidden');
     els.chatApp.classList.remove('hidden');
     closeModal(els.entryModal);
+    document.title = baseTitle;
+    // 새 저장 위치는 roomLog. 옛 rooms에 기록이 있으면 roomLog가 비어 있을 때만 복사한다.
+    // 비어 있는지만 알면 되므로 메시지 1개만 확인한다. (대화 전체를 받지 않는다)
+    const newLogPath = dataPrefix + 'roomLog/' + activeRoomId;
+    const legacyLogPath = (isLocal && activeRoomId === 'devroom') ? 'rooms/' + activeRoomId : dataPrefix + 'rooms/' + activeRoomId;
+    try {
+      const newLogSnapshot = await database.ref(newLogPath).limitToFirst(1).once('value');
+      if (seq !== enterSeq) return;
+      if (!newLogSnapshot.exists()) {
+        const legacyLogSnapshot = await database.ref(legacyLogPath).once('value');
+        if (legacyLogSnapshot.exists()) await database.ref(newLogPath).set(legacyLogSnapshot.val());
+        if (seq !== enterSeq) return;
+      }
+    } catch (error) { console.error('Legacy log check failed:', error); }
+    activeRoomRef = database.ref(newLogPath);
     els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
     lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
     oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
@@ -546,18 +573,24 @@
     setUILanguage(uiLang);
     try {
       const initial = await messagesQuery.once('value');
+      if (seq !== enterSeq) return;
       hasMoreMessages = initial.numChildren() >= PAGE_SIZE;
     } catch (error) { console.error('Initial load failed:', error); }
+    if (seq !== enterSeq) return;
     historyReady = true;
     updateLoadMoreButton(); maybeMarkRead(); scrollChatToBottom();
   }
 
   async function routeIntoRequestedRoom() {
-    const roomId = requestedRoomId;
+    const roomId = new URLSearchParams(window.location.search).get('room');
+    closeModal(els.entryModal);
+    closeActiveRoom();
     if (!roomId) {
       els.lobbyScreen.classList.remove('hidden');
       els.chatApp.classList.add('hidden');
-      await loadRoomList();
+      document.title = baseTitle;
+      if (!lobbyLoaded) { lobbyLoaded = true; await loadRoomList(); }
+      else { renderRoomList(); updateLobbyTitle(); }
       return;
     }
     // Firebase keys cannot contain these characters. Existing room IDs normally do not contain them.
@@ -575,6 +608,7 @@
         return;
       }
       const meta = snapshot.val();
+      if (new URLSearchParams(window.location.search).get('room') !== roomId) return; // 기다리는 사이 다른 화면으로 이동함
       if (!meta.password) {
         await enterRoom(meta);
         return;
@@ -613,7 +647,7 @@
     } finally { btn.disabled = false; }
   });
   els.entryPasswordInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('entryConfirmBtn').click(); });
-  $('entryCancelBtn').addEventListener('click', leaveToLobby);
+  $('entryCancelBtn').addEventListener('click', () => leaveToLobby());
 
   $('createRoomOpenBtn').addEventListener('click', () => {
     $('roomNameInput').value = ''; $('createPasswordToggle').checked = false; $('newRoomPasswordInput').value = ''; $('createPasswordFields').classList.add('hidden'); clearError('createRoomError'); openModal(els.createRoomModal); setTimeout(() => $('roomNameInput').focus(), 50);
@@ -635,7 +669,7 @@
       const meta = { id, name, password: roomPassword, createdAt: Date.now() };
       await directoryRef.child(id).set(meta);
       closeModal(els.createRoomModal);
-      window.location.href = window.location.pathname + '?room=' + encodeURIComponent(id);
+      navigateToRoom(id);
     } catch (error) {
       showError('createRoomError', error.message || 'Error');
     } finally { btn.disabled = false; }
@@ -720,8 +754,7 @@
       return;
     }
     if (openBtn) {
-      const id = openBtn.dataset.roomId;
-      window.location.href = window.location.pathname + '?room=' + encodeURIComponent(id);
+      navigateToRoom(openBtn.dataset.roomId);
     }
   });
 
@@ -826,7 +859,7 @@
   });
   $('roomEditToggleBtn').addEventListener('click', () => { listEditMode = !listEditMode; renderRoomList(); });
   els.roomSearchInput.addEventListener('input', renderRoomList);
-  $('roomListBtn').addEventListener('click', leaveToLobby);
+  $('roomListBtn').addEventListener('click', () => leaveToLobby());
   const languagePairs = [['uiLanguageButton', 'uiLanguagePopup'], ['lobbyLanguageButton', 'lobbyLanguagePopup']];
   languagePairs.forEach(([buttonId, popupId]) => $(buttonId).addEventListener('click', () => $(popupId).classList.toggle('hidden')));
   document.querySelectorAll('.ui-language-option').forEach(button => button.addEventListener('click', () => {
