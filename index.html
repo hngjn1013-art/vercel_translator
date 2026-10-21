@@ -1209,8 +1209,8 @@
   if (SpeechRecognition) {
     // 안드로이드는 continuous 모드에서 같은 문장을 점점 길게 여러 번 확정해서 보내 중복 입력되므로, 한 문장씩 듣고 onend에서 다시 시작
     const isMobileSTT = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    recognition = new SpeechRecognition(); recognition.continuous = !isMobileSTT; recognition.interimResults = !isMobileSTT;
-    let lastSTTChunk = '';
+    recognition = new SpeechRecognition(); recognition.continuous = !isMobileSTT; recognition.interimResults = true;
+    let sttBaseText = '';
     function updateSTTLanguage() { recognition.lang = ({ko:'ko-KR',zh:'zh-TW',ja:'ja-JP',en:'en-US'})[els.sourceLangSelect.value] || 'ko-KR'; }
     function stopRecordingUI() { els.micBtn.classList.remove('recording-active'); els.micIcon.className = 'fa-solid fa-microphone'; els.textInput.placeholder = t().inputPlaceholder; }
     els.micBtn.addEventListener('click', () => {
@@ -1218,18 +1218,14 @@
       if (!isRecording) { isManualStop = false; updateSTTLanguage(); try { recognition.start(); } catch (error) { console.warn('STT start:', error); } }
       else { isManualStop = true; isRecording = false; try { recognition.stop(); recognition.abort(); } catch (error) {} stopRecordingUI(); }
     });
-    recognition.onstart = () => { isRecording = true; els.micBtn.classList.add('recording-active'); els.micIcon.className = 'fa-solid fa-square'; els.textInput.placeholder = t().listening; };
+    recognition.onstart = () => { sttBaseText = els.textInput.value.trim(); isRecording = true; els.micBtn.classList.add('recording-active'); els.micIcon.className = 'fa-solid fa-square'; els.textInput.placeholder = t().listening; };
     recognition.onend = () => { if (!isManualStop && isRecording) { try { recognition.start(); } catch (error) { isRecording = false; stopRecordingUI(); } } else { isRecording = false; stopRecordingUI(); } };
     recognition.onresult = event => {
-      let finalText = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
-      // 같은 내용이 또 확정돼 들어오면(앞 문장을 포함해 길어진 경우) 이어 붙이지 않고 방금 넣은 부분을 교체
-      const chunk = finalText.trim();
-      if (chunk && lastSTTChunk && chunk.startsWith(lastSTTChunk) && els.textInput.value.endsWith(lastSTTChunk)) {
-        els.textInput.value = els.textInput.value.slice(0, -lastSTTChunk.length) + chunk; lastSTTChunk = chunk; resizeTextInput(); return;
-      }
-      if (chunk) lastSTTChunk = chunk;
-      if (finalText.trim()) { els.textInput.value = els.textInput.value ? els.textInput.value + ' ' + finalText.trim() : finalText.trim(); resizeTextInput(); }
+      // 인식 세션 시작 때의 입력창 내용 뒤에, 인식 중인 글자(임시 결과 포함)를 실시간으로 덧씌운다.
+      let spoken = '';
+      for (let i = 0; i < event.results.length; i++) spoken += event.results[i][0].transcript;
+      spoken = spoken.trim();
+      els.textInput.value = sttBaseText && spoken ? sttBaseText + ' ' + spoken : sttBaseText + spoken; resizeTextInput();
     };
     recognition.onerror = event => {
       console.warn('Speech recognition:', event.error);
