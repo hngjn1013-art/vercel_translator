@@ -879,7 +879,10 @@
     try {
       if (!silent) showStatus(tx.translating);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 35000);
+      // 첫 글자는 최대 35초 기다리고, 글자가 오기 시작하면 15초 동안 멈출 때만 끊는다.
+      let timer;
+      const armTimer = ms => { clearTimeout(timer); timer = setTimeout(() => controller.abort(), ms); };
+      armTimer(35000);
       try {
         const response = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ text, targetLang }), signal:controller.signal });
         done();
@@ -903,6 +906,7 @@
         while (true) {
           const { done: end, value } = await reader.read();
           if (end) break;
+          armTimer(15000);
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop();

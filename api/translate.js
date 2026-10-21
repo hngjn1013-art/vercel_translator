@@ -1,8 +1,10 @@
 
 // 첫 글자가 이 시간 안에 안 오면 다음 번역 서비스로 넘어간다.
 const FIRST_TOKEN_TIMEOUT_MS = 4000;
-// 전체 번역 제한 시간
+// 첫 글자를 기다리는 최대 시간(여러 번 시도한 시간을 모두 합친 것)
 const TOTAL_TIMEOUT_MS = 30000;
+// 글자가 오다가 이 시간 동안 아무것도 안 오면 끊는다. (글자가 계속 오는 동안은 끊지 않는다)
+const STREAM_IDLE_TIMEOUT_MS = 15000;
 
 class ProviderError extends Error {
   constructor(message, status) {
@@ -181,7 +183,11 @@ module.exports = async function (req, res) {
     const userText = `<text>${text.trim()}</text>`;
 
     // 앞에 있는 서비스부터 시도하고, 느리거나 실패하면 다음 서비스로 넘어간다.
-    const providers = [{ name: "gemini", stream: geminiStream }];
+    // 느려지는 건 일시적인 경우가 많아서 Gemini에 한 번 더 요청하는 것도 포함한다.
+    const providers = [
+      { name: "gemini", stream: geminiStream },
+      { name: "gemini", stream: geminiStream }
+    ];
     if (process.env.GROQ_API_KEY) {
       providers.push({ name: "groq", stream: groqStream });
     }
@@ -196,8 +202,16 @@ module.exports = async function (req, res) {
 
       if (remaining <= 0) break;
 
+      // 한도 초과(429)일 때는 같은 서비스에 다시 보내도 소용없으니 건너뛴다.
+      if (lastError?.status === 429 && i > 0 && providers[i - 1].name === provider.name) continue;
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), remaining);
+      let timeoutId;
+      const armTimeout = ms => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => controller.abort(), ms);
+      };
+      armTimeout(remaining);
 
       try {
         const iterator = provider.stream({
@@ -220,9 +234,11 @@ module.exports = async function (req, res) {
         res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
         res.setHeader("Cache-Control", "no-store");
         res.write(JSON.stringify({ d: first.value }) + "\n");
+        armTimeout(STREAM_IDLE_TIMEOUT_MS);
 
         try {
           for await (const piece of iterator) {
+            armTimeout(STREAM_IDLE_TIMEOUT_MS);
             res.write(JSON.stringify({ d: piece }) + "\n");
           }
           res.write(JSON.stringify({ done: true, provider: provider.name }) + "\n");
