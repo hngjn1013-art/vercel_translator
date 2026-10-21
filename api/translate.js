@@ -1,5 +1,5 @@
 
-// 첫 글자가 이 시간 안에 안 오면 다음 번역 서비스로 넘어간다.
+// 첫 글자가 이 시간 안에 안 오면 같은 요청을 한 번 더 동시에 보낸다.
 const FIRST_TOKEN_TIMEOUT_MS = 4000;
 // 첫 글자를 기다리는 최대 시간(여러 번 시도한 시간을 모두 합친 것)
 const TOTAL_TIMEOUT_MS = 30000;
@@ -78,14 +78,6 @@ async function* geminiStream({ systemPrompt, userText, signal }) {
   }
 }
 
-function withTimeout(promise, ms) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new ProviderError("First token timeout", 504)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
 module.exports = async function (req, res) {
   res.setHeader("Content-Type", "application/json");
 
@@ -151,88 +143,129 @@ module.exports = async function (req, res) {
       `Output only the translated text without the tags, explanations or quotation marks.`;
     const userText = `<text>${text.trim()}</text>`;
 
-    // 앞에 있는 서비스부터 시도하고, 느리거나 실패하면 다음 서비스로 넘어간다.
-    // 느려지는 건 일시적인 경우가 많아서 Gemini에 한 번 더 요청하는 것도 포함한다.
-    const providers = [
-      { name: "gemini", stream: geminiStream },
-      { name: "gemini", stream: geminiStream }
-    ];
-
     const startedAt = Date.now();
-    let lastError = null;
+    const remainingMs = () => TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
 
-    for (let i = 0; i < providers.length; i++) {
-      const provider = providers[i];
-      const isLast = i === providers.length - 1;
-      const remaining = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
-
-      if (remaining <= 0) break;
-
-      // 한도 초과(429)일 때는 같은 서비스에 다시 보내도 소용없으니 건너뛴다.
-      if (lastError?.status === 429 && i > 0 && providers[i - 1].name === provider.name) continue;
-
+    // 요청 하나를 시작한다. 첫 글자가 오면 { attempt, first }로 이행되고, 실패하면 에러로 거부된다.
+    const launch = () => {
       const controller = new AbortController();
-      let timeoutId;
-      const armTimeout = ms => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => controller.abort(), ms);
+      const attempt = { controller, timeoutId: null };
+      attempt.arm = ms => {
+        clearTimeout(attempt.timeoutId);
+        attempt.timeoutId = setTimeout(() => controller.abort(), ms);
       };
-      armTimeout(remaining);
+      attempt.arm(remainingMs());
 
-      try {
-        const iterator = provider.stream({
-          systemPrompt,
-          userText,
-          signal: controller.signal
-        });
-
-        // 마지막 서비스는 끝까지 기다리고, 앞선 서비스는 첫 글자가 늦으면 포기한다.
-        const nextChunk = iterator.next();
-        const first = await (isLast
-          ? nextChunk
-          : withTimeout(nextChunk, FIRST_TOKEN_TIMEOUT_MS));
-
+      attempt.iterator = geminiStream({
+        systemPrompt,
+        userText,
+        signal: controller.signal
+      });
+      attempt.result = attempt.iterator.next().then(first => {
         if (first.done || !first.value) {
           throw new ProviderError("Empty response", 502);
         }
+        return { ok: true, attempt, first };
+      }, error => ({ ok: false, attempt, error }));
 
-        // 첫 글자를 받았으니 이 서비스로 확정하고 화면에 흘려보낸다.
-        res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
-        res.setHeader("Cache-Control", "no-store");
-        res.write(JSON.stringify({ d: first.value }) + "\n");
-        armTimeout(STREAM_IDLE_TIMEOUT_MS);
+      return attempt;
+    };
 
-        try {
-          for await (const piece of iterator) {
-            armTimeout(STREAM_IDLE_TIMEOUT_MS);
-            res.write(JSON.stringify({ d: piece }) + "\n");
-          }
-          res.write(JSON.stringify({ done: true, provider: provider.name }) + "\n");
-        } catch (streamError) {
-          console.error(`${provider.name} stream broke:`, streamError.message);
-          res.write(JSON.stringify({ error: true }) + "\n");
+    // 1차 요청을 보내고, 4초 안에 첫 글자가 안 오면 1차를 그대로 둔 채 2차도 동시에 보낸다.
+    // 먼저 첫 글자를 준 쪽을 쓰고 나머지는 취소한다.
+    const MAX_ATTEMPTS = 2;
+    const pending = new Set([launch()]);
+    let launched = 1;
+    let lastError = null;
+    let winner = null;
+
+    let hedgeTimerId;
+    let hedgeWaiting = true;
+    const hedgeTimer = new Promise(resolve => {
+      hedgeTimerId = setTimeout(() => resolve({ hedge: true }), FIRST_TOKEN_TIMEOUT_MS);
+    });
+
+    while (pending.size > 0) {
+      const waiting = [...pending].map(attempt => attempt.result);
+      if (hedgeWaiting) waiting.push(hedgeTimer);
+
+      const event = await Promise.race(waiting);
+
+      if (event.hedge) {
+        hedgeWaiting = false;
+        if (launched < MAX_ATTEMPTS && remainingMs() > 0) {
+          pending.add(launch());
+          launched++;
         }
+        continue;
+      }
 
-        return res.end();
-      } catch (error) {
-        controller.abort();
-        lastError = error;
-        console.error(`${provider.name} failed:`, error.name, error.message);
-      } finally {
-        clearTimeout(timeoutId);
+      if (event.ok) {
+        winner = event;
+        break;
+      }
+
+      // 실패한 요청은 목록에서 빼고, 아직 여유가 있으면 바로 다시 보낸다.
+      pending.delete(event.attempt);
+      clearTimeout(event.attempt.timeoutId);
+      lastError = event.error;
+      console.error("gemini failed:", event.error.name, event.error.message);
+
+      // 한도 초과(429)일 때는 다시 보내도 소용없으니 포기한다.
+      if (event.error.status === 429) break;
+
+      if (launched < MAX_ATTEMPTS && remainingMs() > 0) {
+        hedgeWaiting = false;
+        pending.add(launch());
+        launched++;
       }
     }
 
-    const status = lastError?.status;
-    const isTimeout = lastError?.name === "AbortError" || status === 504;
+    clearTimeout(hedgeTimerId);
 
-    return res.status(
-      isTimeout
-        ? 504
-        : status >= 400 && status < 500
-          ? status
-          : 502
-    ).json({ error: "Translation API failed." });
+    // 이긴 쪽 말고는 모두 취소한다.
+    for (const attempt of pending) {
+      if (!winner || attempt !== winner.attempt) {
+        clearTimeout(attempt.timeoutId);
+        attempt.controller.abort();
+      }
+    }
+
+    if (!winner) {
+      const status = lastError?.status;
+      const isTimeout = lastError?.name === "AbortError" || status === 504;
+
+      return res.status(
+        isTimeout
+          ? 504
+          : status >= 400 && status < 500
+            ? status
+            : 502
+      ).json({ error: "Translation API failed." });
+    }
+
+    // 첫 글자를 받았으니 이 요청으로 확정하고 화면에 흘려보낸다.
+    const { attempt, first } = winner;
+
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.write(JSON.stringify({ d: first.value }) + "\n");
+    attempt.arm(STREAM_IDLE_TIMEOUT_MS);
+
+    try {
+      for await (const piece of attempt.iterator) {
+        attempt.arm(STREAM_IDLE_TIMEOUT_MS);
+        res.write(JSON.stringify({ d: piece }) + "\n");
+      }
+      res.write(JSON.stringify({ done: true }) + "\n");
+    } catch (streamError) {
+      console.error("gemini stream broke:", streamError.message);
+      res.write(JSON.stringify({ error: true }) + "\n");
+    } finally {
+      clearTimeout(attempt.timeoutId);
+    }
+
+    return res.end();
 
   } catch (error) {
     console.error("Translation function error:", error.message);
