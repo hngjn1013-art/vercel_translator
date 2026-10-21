@@ -573,6 +573,14 @@
       leaveToLobby();
       return;
     }
+    // 비밀번호 없는 방은 서버 응답을 기다리지 않고 바로 채팅 화면과 로딩 표시를 보여준다.
+    const preview = allRooms[roomId];
+    if (preview && preview.name && !preview.password) {
+      $('currentRoomName').textContent = preview.name;
+      els.chatContainer.innerHTML = `<div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>${safeHtml(t().loading || '...')}</div>`;
+      els.lobbyScreen.classList.add('hidden');
+      els.chatApp.classList.remove('hidden');
+    }
     try {
       // 목록에서 이미 최신 방 정보를 받아 둔 경우에는 서버에 다시 묻지 않는다.
       let meta = (directoryLive && allRooms[roomId] && allRooms[roomId].id) ? Object.assign({}, allRooms[roomId]) : null;
