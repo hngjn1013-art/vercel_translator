@@ -482,6 +482,8 @@
   // 페이지를 새로 불러오지 않고 화면만 바꾼다. (Firebase 연결·목록 데이터를 그대로 재사용)
   let lobbyLoaded = false, enterSeq = 0;
   function navigateToRoom(id) {
+    // 이미 방에 들어가는 중이면 추가로 누른 것은 무시한다. (누를 때마다 뒤로가기 기록이 쌓이는 것을 막음)
+    if (new URLSearchParams(window.location.search).get('room')) return;
     history.pushState({ fromLobby: true }, '', window.location.pathname + '?room=' + encodeURIComponent(id));
     routeIntoRequestedRoom();
   }
@@ -551,7 +553,9 @@
     updateLoadMoreButton(); maybeMarkRead(); scrollChatToBottom();
   }
 
+  let routeSeq = 0;
   async function routeIntoRequestedRoom() {
+    const mySeq = ++routeSeq;
     const roomId = new URLSearchParams(window.location.search).get('room');
     closeModal(els.entryModal);
     closeActiveRoom();
@@ -582,7 +586,7 @@
         }
         meta = snapshot.val();
       }
-      if (new URLSearchParams(window.location.search).get('room') !== roomId) return; // 기다리는 사이 다른 화면으로 이동함
+      if (mySeq !== routeSeq || new URLSearchParams(window.location.search).get('room') !== roomId) return; // 기다리는 사이 다른 화면으로 이동함
       if (!meta.password) {
         await enterRoom(meta);
         return;
