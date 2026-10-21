@@ -84,7 +84,7 @@
   </section>
 
   <!-- 채팅 화면: 방에 정상 입장한 뒤에만 표시 -->
-  <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden" style="height: var(--app-h, 100dvh)">
+  <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden" style="position:fixed; left:0; right:0; margin:0 auto; max-width:42rem; top: var(--app-top, 0px); height: var(--app-h, 100dvh)">
     <header class="bg-white border-b border-slate-200 p-3 flex flex-col gap-2.5 shadow-sm z-10 shrink-0">
       <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div class="justify-self-start">
@@ -1201,13 +1201,19 @@
   // 모바일 브라우저는 하단 툴바 때문에 100dvh가 실제 보이는 높이와 다를 수 있어서, 실제 높이를 직접 재서 사용
   (function () {
     function setAppHeight() {
-      const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const vv = window.visualViewport;
+      const h = (vv && vv.height) || window.innerHeight;
+      const top = (vv && vv.offsetTop) || 0;
       document.documentElement.style.setProperty('--app-h', h + 'px');
+      document.documentElement.style.setProperty('--app-top', top + 'px');
     }
     setAppHeight();
     window.addEventListener('resize', setAppHeight);
     window.addEventListener('orientationchange', setAppHeight);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setAppHeight);
+      window.visualViewport.addEventListener('scroll', setAppHeight);
+    }
   })();
 </script>
 </body>
