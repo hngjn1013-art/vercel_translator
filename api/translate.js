@@ -78,37 +78,6 @@ async function* geminiStream({ systemPrompt, userText, signal }) {
   }
 }
 
-// Groq는 OpenAI와 같은 방식(chat completions)으로 호출한다.
-async function* groqStream({ systemPrompt, userText, signal }) {
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userText }
-      ],
-      temperature: 0.2,
-      max_tokens: 2048,
-      stream: true
-    }),
-    signal
-  });
-
-  if (!response.ok) throw new ProviderError("Groq API error", response.status);
-
-  for await (const data of readSse(response)) {
-    if (data === "[DONE]") return;
-
-    const text = JSON.parse(data).choices?.[0]?.delta?.content;
-    if (text) yield text;
-  }
-}
-
 function withTimeout(promise, ms) {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -188,9 +157,6 @@ module.exports = async function (req, res) {
       { name: "gemini", stream: geminiStream },
       { name: "gemini", stream: geminiStream }
     ];
-    if (process.env.GROQ_API_KEY) {
-      providers.push({ name: "groq", stream: groqStream });
-    }
 
     const startedAt = Date.now();
     let lastError = null;
