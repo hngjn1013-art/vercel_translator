@@ -1172,7 +1172,10 @@
   // 음성 입력 (브라우저가 지원하는 경우)
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
-    recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true;
+    // 안드로이드는 continuous 모드에서 같은 문장을 점점 길게 여러 번 확정해서 보내 중복 입력되므로, 한 문장씩 듣고 onend에서 다시 시작
+    const isMobileSTT = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    recognition = new SpeechRecognition(); recognition.continuous = !isMobileSTT; recognition.interimResults = !isMobileSTT;
+    let lastSTTChunk = '';
     function updateSTTLanguage() { recognition.lang = ({ko:'ko-KR',zh:'zh-TW',ja:'ja-JP',en:'en-US'})[els.sourceLangSelect.value] || 'ko-KR'; }
     function stopRecordingUI() { els.micBtn.classList.remove('recording-active'); els.micIcon.className = 'fa-solid fa-microphone'; els.textInput.placeholder = t().inputPlaceholder; }
     els.micBtn.addEventListener('click', () => {
@@ -1185,6 +1188,12 @@
     recognition.onresult = event => {
       let finalText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+      // 같은 내용이 또 확정돼 들어오면(앞 문장을 포함해 길어진 경우) 이어 붙이지 않고 방금 넣은 부분을 교체
+      const chunk = finalText.trim();
+      if (chunk && lastSTTChunk && chunk.startsWith(lastSTTChunk) && els.textInput.value.endsWith(lastSTTChunk)) {
+        els.textInput.value = els.textInput.value.slice(0, -lastSTTChunk.length) + chunk; lastSTTChunk = chunk; resizeTextInput(); return;
+      }
+      if (chunk) lastSTTChunk = chunk;
       if (finalText.trim()) { els.textInput.value = els.textInput.value ? els.textInput.value + ' ' + finalText.trim() : finalText.trim(); resizeTextInput(); }
     };
     recognition.onerror = event => {
