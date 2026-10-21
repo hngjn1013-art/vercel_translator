@@ -278,7 +278,7 @@
   let lastDateKey = '';   // 마지막으로 그린 메시지의 날짜 (날짜 구분선용)
   let deleteTarget = null; // 삭제 확인 창이 가리키는 방
   let statusTimer = null;
-  const PAGE_SIZE = 50;               // 한 번에 불러오는 대화 수
+  const PAGE_SIZE = 30;              // 한 번에 불러오는 대화 수
   const baseTitle = document.title;
   let messagesQuery = null, changedListener = null;
   let oldestKey = null, newestKey = null, hasMoreMessages = false, loadingMore = false;
@@ -418,7 +418,7 @@
   }
 
   function renderRoomList() {
-    if (!els.roomList) return;
+    if (!els.roomList || els.lobbyScreen.classList.contains('hidden')) return; // 목록이 안 보일 때는 그리지 않는다. (돌아올 때 다시 그림)
     const tx = t();
     const labels = EDIT_LABELS[uiLang] || EDIT_LABELS.ko;
     setText('roomEditToggleText', listEditMode ? labels.done : labels.edit);
@@ -434,7 +434,7 @@
       els.roomList.innerHTML = `<div class="text-center text-sm text-slate-400 py-10"><i class="fa-regular fa-comments text-2xl mb-3 block"></i>${safeHtml(query ? tx.noSearchResults : tx.noRooms)}</div>`;
       return;
     }
-    els.roomList.innerHTML = rows.map(room => {
+    const items = rows.map(room => {
       const locked = !!room.password;
       const roomName = safeHtml(room.name || room.id);
       const id = safeHtml(room.id);
@@ -445,7 +445,7 @@
       const previewText = locked ? el.lockedPreview : (summary && summary.loaded ? (summary.text ? String(summary.text).replace(/\s+/g, ' ').trim() : el.noMessages) : '');
       const timeLabel = summary && summary.timestamp ? formatListTime(summary.timestamp) : '';
       const badge = unread > 0 ? `<span class="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">${unread > 99 ? '99+' : unread}</span>` : '';
-      return `<div class="room-card bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-indigo-300 hover:shadow-sm transition-all" data-room-id="${id}">
+      return { id: room.id, html: `<div class="room-card bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-indigo-300 hover:shadow-sm transition-all" data-room-id="${id}">
         ${listEditMode ? `<button type="button" class="edit-icon-btn relative shrink-0 rounded-xl hover:opacity-80" data-room-id="${id}" aria-label="${el.iconTitle}" title="${el.iconTitle}">${roomIconHtml(room)}<span class="absolute -right-1 -bottom-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center shadow"><i class="fa-solid fa-pen"></i></span></button>` : ''}
         <button class="open-room-btn flex items-center gap-3 flex-1 min-w-0 text-left" data-room-id="${id}">
           ${listEditMode ? '' : roomIconHtml(room)}
@@ -457,8 +457,35 @@
         </button>
         ${listEditMode ? `<button class="settings-room-btn w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0" data-room-id="${id}" aria-label="${el.settings}" title="${el.settings}"><i class="fa-solid fa-gear"></i></button>
         <button class="delete-room-btn w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 shrink-0" data-room-id="${id}" aria-label="${el.remove}" title="${el.remove}"><i class="fa-solid fa-trash"></i></button>` : ''}
-      </div>`;
-    }).join('');
+      </div>`.trim() };
+    });
+    reconcileRoomList(items);
+  }
+
+  // 목록을 통째로 지우고 다시 그리지 않고, 바뀐 방 카드만 교체한다. (누르는 도중에 버튼이 사라져 터치가 무시되는 것을 막음)
+  function reconcileRoomList(items) {
+    const list = els.roomList;
+    const existing = new Map();
+    Array.from(list.children).forEach(child => {
+      if (child.classList.contains('room-card')) existing.set(child.dataset.roomId, child); else child.remove();
+    });
+    const keep = new Set(items.map(item => item.id));
+    existing.forEach((el, id) => { if (!keep.has(id)) { el.remove(); existing.delete(id); } });
+    let prev = null;
+    items.forEach(item => {
+      let el = existing.get(item.id);
+      if (!el || el._html !== item.html) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = item.html;
+        const fresh = tpl.content.firstElementChild;
+        fresh._html = item.html;
+        if (el) el.replaceWith(fresh); else list.appendChild(fresh);
+        el = fresh;
+      }
+      const expected = prev ? prev.nextSibling : list.firstChild;
+      if (el !== expected) list.insertBefore(el, expected);
+      prev = el;
+    });
   }
 
   async function loadRoomList() {
