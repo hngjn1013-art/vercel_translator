@@ -1013,7 +1013,10 @@
   }
   $('sendBtn').addEventListener('click', async () => {
     const val = els.textInput.value.trim(); if (!val) return;
-    els.textInput.value = ''; resizeTextInput(); await sendMessage(val);
+    els.textInput.value = ''; resizeTextInput();
+    // 마이크가 켜져 있으면 인식을 새로 시작해서, 이미 보낸 말이 다음 입력에 되살아나지 않게 한다.
+    if (isRecording && recognition) { try { recognition.abort(); } catch (error) {} }
+    await sendMessage(val);
   });
   els.textInput.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('sendBtn').click(); }
