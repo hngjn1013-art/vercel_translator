@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#f4f2ee">
   <title>닝닝 번역 사이트</title>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
@@ -13,35 +13,49 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // 색 팔레트를 통째로 바꾼다: slate는 따뜻한 아이보리/회색, indigo와 emerald는 짙은 숲 초록.
+    // 아래 화면 코드와 JS가 만드는 방 카드·말풍선은 기존 클래스 이름 그대로 새 색이 입혀진다.
+    const forest = { 50:'#eaf1ed', 100:'#d9e6df', 200:'#b9d1c4', 300:'#8fb3a0', 400:'#5f9079', 500:'#3f7059', 600:'#2c5444', 700:'#234438', 800:'#1b352c', 900:'#12241d' };
+    tailwind.config = { theme: { extend: { colors: {
+      slate: { 50:'#f4f2ee', 100:'#ebe8e1', 200:'#e0dcd3', 300:'#cdc8bd', 400:'#9b978e', 500:'#76736b', 600:'#5a5851', 700:'#3e3d38', 800:'#25302b', 900:'#161b18' },
+      indigo: forest, emerald: forest
+    } } } };
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f4f2ee; color: #25302b; }
     .chat-scroll::-webkit-scrollbar { width: 6px; }
-    .chat-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background-color: #cdc8bd; border-radius: 3px; }
+    .floating-bar { box-shadow: 0 10px 30px rgba(37,48,43,.16), 0 2px 6px rgba(37,48,43,.08); }
+    .soft-card { box-shadow: 0 1px 2px rgba(37,48,43,.05), 0 6px 18px rgba(37,48,43,.06); }
     @keyframes pulse-ring { 0% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(239,68,68,.7); } 70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(239,68,68,0); } 100% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
-    .recording-active { animation: pulse-ring 1.5s infinite; background-color: #ef4444 !important; }
-    .modal-backdrop { background: rgba(15,23,42,.45); backdrop-filter: blur(4px); }
+    .recording-active { animation: pulse-ring 1.5s infinite; background-color: #ef4444 !important; color: #fff !important; }
+    .modal-backdrop { background: rgba(37,48,43,.4); backdrop-filter: blur(4px); }
     button:disabled { opacity: .55; cursor: not-allowed; }
     .safe-bottom { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
-    .hdr-pill { display:inline-flex; align-items:center; gap:.5rem; height:2.6rem; padding:0 .85rem 0 .3rem; border-radius:9999px; background:#fff; border:1.5px solid #c7d2fe; box-shadow:0 1px 3px rgba(79,70,229,.14); color:#312e81; font-size:.8125rem; font-weight:600; line-height:1.15; white-space:nowrap; max-width:100%; transition:background .15s,border-color .15s,box-shadow .15s; }
-    .hdr-pill:hover { background:#eef2ff; border-color:#818cf8; box-shadow:0 2px 8px rgba(79,70,229,.22); }
-    .hdr-pill.lang { padding:0 .9rem; gap:.45rem; }
-    .hdr-pill .pill-label { display:block; font-size:.625rem; font-weight:600; color:#6366f1; letter-spacing:.02em; }
-    .hdr-pill .pill-name { display:block; font-size:.9rem; font-weight:700; color:#1e1b4b; max-width:9rem; overflow:hidden; text-overflow:ellipsis; }
-    .hdr-pill .pill-sub { color:#818cf8; font-size:.72rem; }
-    .user-avatar { width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.9rem; flex-shrink:0; box-shadow:inset 0 0 0 2px rgba(255,255,255,.35); }
-    .ui-language-option.lang-active { background:#eef2ff; color:#4338ca; font-weight:700; }
+    .hdr-pill { display:inline-flex; align-items:center; gap:.5rem; height:2.6rem; padding:0 .85rem 0 .3rem; border-radius:9999px; background:#fff; border:0; box-shadow:0 1px 2px rgba(37,48,43,.06), 0 4px 12px rgba(37,48,43,.07); color:#25302b; font-size:.8125rem; font-weight:600; line-height:1.15; white-space:nowrap; max-width:100%; transition:background .15s,box-shadow .15s; }
+    .hdr-pill:hover { background:#f7f5f1; box-shadow:0 2px 4px rgba(37,48,43,.08), 0 6px 16px rgba(37,48,43,.1); }
+    .hdr-pill.lang { padding:0 .95rem; gap:.45rem; }
+    .hdr-pill .pill-label { display:block; font-size:.625rem; font-weight:600; color:#76736b; }
+    .hdr-pill .pill-name { display:block; font-size:.9rem; font-weight:700; color:#25302b; max-width:9rem; overflow:hidden; text-overflow:ellipsis; }
+    .hdr-pill .pill-sub { color:#9b978e; font-size:.72rem; }
+    .user-avatar { width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.9rem; flex-shrink:0; }
+    .ui-language-option.lang-active { background:#eaf1ed; color:#234438; font-weight:700; }
+    #chatApp, #lobbyScreen { background:#f4f2ee; }
+    #textInput { background:transparent; border:0; box-shadow:none; }
+    .room-card:active { background:#e9efeb; }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen max-w-2xl mx-auto shadow-2xl relative">
+<body class="bg-slate-50 min-h-screen max-w-2xl mx-auto relative">
 
   <!-- 채팅방 목록 화면 -->
   <section id="lobbyScreen" class="min-h-screen bg-slate-50 flex flex-col">
-    <header class="bg-white border-b border-slate-200 p-4 shadow-sm">
+    <header class="px-5 pt-6 pb-2">
       <div class="min-w-0">
-        <h1 id="lobbyTitle" class="font-bold text-slate-800 text-xl">AI 번역 채팅방</h1>
-        <p id="lobbySubtitle" class="text-xs text-slate-500 mt-1">채팅방을 선택하거나 새로 만들어 보세요.</p>
+        <h1 id="lobbyTitle" class="font-extrabold text-slate-900 text-3xl tracking-tight leading-tight">AI 번역 채팅방</h1>
+        <p id="lobbySubtitle" class="text-sm text-slate-500 mt-1.5">채팅방을 선택하거나 새로 만들어 보세요.</p>
       </div>
       <div class="flex items-center justify-between gap-2 mt-3">
         <button id="lobbyChangeUserBtn" type="button" class="hdr-pill min-w-0" title="ID">
@@ -50,52 +64,54 @@
           <i class="fa-solid fa-pen pill-sub"></i>
         </button>
         <div class="relative shrink-0">
-          <button id="lobbyLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><span aria-hidden="true">🌐</span><span id="lobbyLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
-          <div id="lobbyLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
+          <button id="lobbyLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="lobbyLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <div id="lobbyLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl floating-bar p-2 z-50">
             <p id="lobbyLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
-            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇰🇷 한국어</button>
-            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇹🇼 繁體中文</button>
-            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇯🇵 日本語</button>
-            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇺🇸 English</button>
+            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">한국어</button>
+            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">繁體中文</button>
+            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">日本語</button>
+            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">English</button>
           </div>
         </div>
       </div>
     </header>
-    <main class="flex-1 p-4">
-      <div class="flex gap-2 mb-4">
-        <div class="flex-1 relative">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-          <input id="roomSearchInput" type="search" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" placeholder="채팅방 검색">
-        </div>
-        <button id="createRoomOpenBtn" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 text-sm font-semibold whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i><span id="createRoomButtonText">새 채팅방</span></button>
+    <main class="flex-1 px-4 pt-4 pb-32">
+      <div class="relative mb-5">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+        <input id="roomSearchInput" type="search" class="w-full pl-11 pr-4 h-12 rounded-full border-0 bg-slate-100 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600/30" placeholder="채팅방 검색">
       </div>
-      <div class="flex items-center justify-between mb-2 px-1">
+      <div class="flex items-center justify-between mb-2.5 px-1">
         <div class="flex items-baseline gap-2 min-w-0">
-          <h2 id="roomListHeading" class="text-sm font-bold text-slate-700">채팅방 목록</h2>
-          <span id="roomCountLabel" class="text-xs text-slate-400"></span>
+          <h2 id="roomListHeading" class="text-sm font-bold text-slate-900">채팅방 목록</h2>
+          <span id="roomCountLabel" class="text-xs text-slate-500"></span>
         </div>
-        <button id="roomEditToggleBtn" type="button" class="text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-1.5 whitespace-nowrap"><i id="roomEditToggleIcon" class="fa-solid fa-pen mr-1"></i><span id="roomEditToggleText">수정</span></button>
+        <button id="roomEditToggleBtn" type="button" class="text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 rounded-full px-3.5 py-1.5 whitespace-nowrap soft-card"><i id="roomEditToggleIcon" class="fa-solid fa-pen mr-1"></i><span id="roomEditToggleText">수정</span></button>
       </div>
-      <div id="roomList" class="space-y-2">
+      <div id="roomList" class="bg-white rounded-3xl overflow-hidden soft-card">
         <div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i><span id="roomLoadingText">채팅방을 불러오는 중...</span></div>
       </div>
+      <p class="text-center text-[11px] text-slate-400 mt-6">AI Translation Chat</p>
     </main>
-    <footer class="text-center text-[11px] text-slate-400 p-4">AI Translation Chat</footer>
+    <div class="fixed bottom-0 left-0 right-0 z-30 pointer-events-none" style="padding: 0 1rem max(1.25rem, env(safe-area-inset-bottom))">
+      <div class="max-w-2xl mx-auto pointer-events-auto">
+        <button id="createRoomOpenBtn" class="floating-bar w-full h-14 rounded-full bg-indigo-700 hover:bg-indigo-800 active:scale-[.99] transition text-white text-base font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i><span id="createRoomButtonText">새 채팅방</span></button>
+      </div>
+    </div>
   </section>
 
   <!-- 채팅 화면: 방에 정상 입장한 뒤에만 표시 -->
   <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden" style="position:fixed; left:0; right:0; margin:0 auto; max-width:42rem; top: var(--app-top, 0px); height: var(--app-h, 100dvh)">
-    <header class="bg-white border-b border-slate-200 p-3 flex flex-col gap-2.5 shadow-sm z-10 shrink-0">
+    <header class="px-3 pt-3 pb-2 flex flex-col gap-2.5 z-10 shrink-0">
       <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div class="justify-self-start">
-          <button id="roomListBtn" class="h-9 px-3 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 whitespace-nowrap"><i class="fa-solid fa-list mr-1"></i><span id="roomListButtonText">목록</span></button>
+          <button id="roomListBtn" class="h-10 px-4 rounded-full bg-white text-slate-800 text-xs font-semibold hover:bg-slate-100 whitespace-nowrap soft-card"><i class="fa-solid fa-chevron-left mr-1.5"></i><span id="roomListButtonText">목록</span></button>
         </div>
         <div class="min-w-0 max-w-[58vw] text-center">
-          <h1 id="uiTitle" class="text-[11px] font-semibold tracking-wide text-indigo-500 leading-none mb-1">AI 번역</h1>
-          <div id="currentRoomName" class="text-xl font-extrabold text-slate-800 truncate leading-tight"></div>
+          <h1 id="uiTitle" class="text-[11px] font-semibold text-slate-500 leading-none mb-1">AI 번역</h1>
+          <div id="currentRoomName" class="text-xl font-extrabold text-slate-900 truncate leading-tight tracking-tight"></div>
         </div>
         <div class="justify-self-end">
-          <button id="roomSettingsBtn" title="채팅방 설정" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 text-sm hover:bg-slate-200"><i class="fa-solid fa-gear"></i></button>
+          <button id="roomSettingsBtn" title="채팅방 설정" class="w-10 h-10 rounded-full bg-white text-slate-700 text-sm hover:bg-slate-100 soft-card"><i class="fa-solid fa-gear"></i></button>
         </div>
       </div>
       <div class="flex items-center justify-between gap-2">
@@ -105,73 +121,73 @@
           <i class="fa-solid fa-pen pill-sub"></i>
         </button>
         <div class="relative shrink-0">
-          <button id="uiLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><span aria-hidden="true">🌐</span><span id="uiLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
-          <div id="uiLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50">
+          <button id="uiLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="uiLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <div id="uiLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl floating-bar p-2 z-50">
             <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
-            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇰🇷 한국어</button>
-            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇹🇼 繁體中文</button>
-            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇯🇵 日本語</button>
-            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-lg">🇺🇸 English</button>
+            <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">한국어</button>
+            <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">繁體中文</button>
+            <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">日本語</button>
+            <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">English</button>
           </div>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
-        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"><span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
-        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1"><span id="uiTargetLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">번역:</span><select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="zh">대만어 (繁體中文)</option><option value="ko">한국어</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
+        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
+        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiTargetLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">번역:</span><select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="zh">대만어 (繁體中文)</option><option value="ko">한국어</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
       </div>
     </header>
-    <main id="chatContainer" class="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3 chat-scroll bg-slate-50/70">
-      <div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
+    <main id="chatContainer" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3 chat-scroll">
+      <div class="text-center my-2"><span id="uiWelcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
     </main>
-    <footer class="bg-white border-t border-slate-200 p-3 z-10 shrink-0 safe-bottom">
-      <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1 animate-pulse px-2 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
-      <div class="flex items-end gap-2">
-        <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg hover:bg-indigo-700 transition-all shadow-md shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
-        <textarea id="textInput" rows="1" placeholder="메시지 입력" autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto bg-slate-100 border border-slate-300 rounded-2xl px-4 py-3 text-slate-800 text-sm md:text-base focus:outline-none focus:border-indigo-500 focus:bg-white shadow-inner leading-5"></textarea>
-        <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg hover:bg-emerald-600 transition-all shadow-md shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
+    <footer class="px-3 pt-1 z-10 shrink-0 safe-bottom">
+      <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1.5 animate-pulse px-3 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
+      <div class="floating-bar bg-white rounded-[1.75rem] p-1.5 flex items-end gap-1.5">
+        <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-lg hover:bg-slate-200 transition-all shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
+        <textarea id="textInput" rows="1" placeholder="메시지 입력" autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto rounded-2xl px-2 py-3 text-slate-800 text-sm md:text-base focus:outline-none leading-5"></textarea>
+        <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-indigo-700 text-white flex items-center justify-center text-lg hover:bg-indigo-800 transition-all shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </footer>
   </div>
 
   <!-- 비밀번호 입장 모달 -->
   <div id="entryModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
-      <div class="flex items-start gap-3"><div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
-      <input id="entryPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
+      <div class="flex items-start gap-3"><div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
+      <input id="entryPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
       <p id="entryError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="entryCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="entryConfirmBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">입장</button></div>
+      <div class="flex gap-2"><button id="entryCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="entryConfirmBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">입장</button></div>
     </div>
   </div>
 
   <!-- 새 채팅방 생성 모달 -->
   <div id="createRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="createModalTitle" class="font-bold text-slate-800 text-lg">새 채팅방 만들기</h3><button id="createModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label id="roomNameLabel" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" maxlength="40" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
+      <div><label id="roomNameLabel" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
       <label class="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl"><span><span id="createPasswordLabel" class="block text-sm font-medium text-slate-700">비밀번호 사용</span><span id="createPasswordHint" class="block text-xs text-slate-500 mt-0.5">필요한 경우 비밀번호를 설정하세요.</span></span><input id="createPasswordToggle" type="checkbox" class="w-5 h-5 accent-indigo-600"></label>
-      <div id="createPasswordFields" class="hidden"><label id="newRoomPasswordLabel" for="newRoomPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label><input id="newRoomPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호 입력"></div>
+      <div id="createPasswordFields" class="hidden"><label id="newRoomPasswordLabel" for="newRoomPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label><input id="newRoomPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호 입력"></div>
       <p id="createRoomError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="createRoomCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="createRoomSubmitBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">만들기</button></div>
+      <div class="flex gap-2"><button id="createRoomCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="createRoomSubmitBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">만들기</button></div>
     </div>
   </div>
 
   <!-- 채팅방 비밀번호 설정 모달 -->
   <div id="roomSettingsModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="settingsModalTitle" class="font-bold text-slate-800 text-lg">채팅방 설정</h3><button id="settingsModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label for="settingsRoomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" maxlength="40" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
+      <div><label for="settingsRoomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
       <div class="p-3 rounded-xl bg-slate-50"><p id="settingsPasswordStatus" class="text-xs text-slate-500"></p></div>
-      <div><label id="passwordActionLabel" for="passwordActionSelect" class="block text-xs font-medium text-slate-600 mb-1.5">변경할 설정</label><select id="passwordActionSelect" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm bg-white"><option value="enable">비밀번호 켜기</option><option value="disable">비밀번호 끄기</option><option value="change">비밀번호 변경</option></select></div>
-      <div id="currentPasswordFields" class="hidden"><label id="currentPasswordLabel" for="currentPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">현재 비밀번호</label><input id="currentPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="현재 비밀번호"></div>
-      <div id="settingsNewPasswordFields"><label id="settingsNewPasswordLabel" for="settingsNewPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">새 비밀번호</label><input id="settingsNewPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="새 비밀번호 입력"></div>
+      <div><label id="passwordActionLabel" for="passwordActionSelect" class="block text-xs font-medium text-slate-600 mb-1.5">변경할 설정</label><select id="passwordActionSelect" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm bg-white"><option value="enable">비밀번호 켜기</option><option value="disable">비밀번호 끄기</option><option value="change">비밀번호 변경</option></select></div>
+      <div id="currentPasswordFields" class="hidden"><label id="currentPasswordLabel" for="currentPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">현재 비밀번호</label><input id="currentPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="현재 비밀번호"></div>
+      <div id="settingsNewPasswordFields"><label id="settingsNewPasswordLabel" for="settingsNewPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">새 비밀번호</label><input id="settingsNewPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="새 비밀번호 입력"></div>
       <p id="settingsError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="settingsCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="settingsSaveBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">저장</button></div>
+      <div class="flex gap-2"><button id="settingsCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="settingsSaveBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
     </div>
   </div>
 
   <!-- 채팅방 아이콘·배경색 변경 모달 -->
   <div id="iconPickerModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="iconModalTitle" class="font-bold text-slate-800 text-lg">아이콘 변경</h3><button id="iconModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
       <div class="flex items-center gap-3">
         <div id="iconPreview" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"></div>
@@ -179,15 +195,15 @@
       </div>
       <div><p id="iconGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">아이콘</p><div id="iconGrid" class="grid grid-cols-8 gap-1"></div></div>
       <div><p id="colorGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">배경 색</p><div id="colorGrid" class="flex flex-wrap gap-2 items-center"></div></div>
-      <div class="flex gap-2"><button id="iconCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="iconSaveBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">저장</button></div>
+      <div class="flex gap-2"><button id="iconCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="iconSaveBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
     </div>
   </div>
 
   <!-- 채팅방 삭제 확인 모달 -->
   <div id="deleteRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
       <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></div>
+        <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></div>
         <div class="flex-1 min-w-0">
           <h3 id="deleteModalTitle" class="font-bold text-slate-800">채팅방 삭제</h3>
           <p id="deleteModalRoomName" class="text-sm font-semibold text-slate-700 mt-1 break-words"></p>
@@ -196,19 +212,19 @@
       </div>
       <div id="deletePasswordFields" class="hidden">
         <label id="deletePasswordLabel" for="deletePasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label>
-        <input id="deletePasswordInput" type="password" autocomplete="off" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm outline-none focus:border-red-400" placeholder="비밀번호">
+        <input id="deletePasswordInput" type="password" autocomplete="off" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-red-400" placeholder="비밀번호">
       </div>
       <p id="deleteError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="deleteCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-xl">취소</button><button id="deleteConfirmBtn" class="flex-1 px-4 py-2.5 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-xl">삭제</button></div>
+      <div class="flex gap-2"><button id="deleteCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="deleteConfirmBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-full">삭제</button></div>
     </div>
   </div>
 
   <!-- 사용자 ID 수정 모달 -->
   <div id="userModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl flex flex-col gap-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
       <div class="flex justify-between items-center border-b border-slate-100 pb-2"><h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-gear text-indigo-600"></i> <span id="uiModalTitle">사용자 ID 설정</span></h3><button id="closeModalBtn" class="text-slate-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
-      <div class="flex justify-end gap-2"><button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-xl">취소</button><button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-xl">저장하기</button></div>
+      <div><label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-200 bg-slate-50 rounded-2xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
+      <div class="flex justify-end gap-2"><button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-full">취소</button><button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-full">저장하기</button></div>
     </div>
   </div>
 
@@ -414,7 +430,7 @@
     const inner = room.icon
       ? '<span class="text-2xl leading-none">' + safeHtml(String(room.icon).slice(0, 16)) + '</span>'
       : '<i class="fa-solid fa-comments"></i>';
-    return '<span class="w-12 h-12 rounded-xl' + (hasColor ? '' : ' bg-indigo-50 text-indigo-600') + ' flex items-center justify-center text-lg shrink-0"' + (hasColor ? ' style="background:' + room.color + '"' : '') + '>' + inner + '</span>';
+    return '<span class="w-12 h-12 rounded-2xl' + (hasColor ? '' : ' bg-indigo-50 text-indigo-600') + ' flex items-center justify-center text-lg shrink-0"' + (hasColor ? ' style="background:' + room.color + '"' : '') + '>' + inner + '</span>';
   }
 
   function renderRoomList() {
@@ -444,8 +460,8 @@
       // 비밀번호가 있는 방은 마지막 메시지를 보여주지 않는다.
       const previewText = locked ? el.lockedPreview : (summary && summary.loaded ? (summary.text ? String(summary.text).replace(/\s+/g, ' ').trim() : el.noMessages) : '');
       const timeLabel = summary && summary.timestamp ? formatListTime(summary.timestamp) : '';
-      const badge = unread > 0 ? `<span class="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">${unread > 99 ? '99+' : unread}</span>` : '';
-      return { id: room.id, html: `<div class="room-card bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-indigo-300 hover:shadow-sm transition-all" data-room-id="${id}">
+      const badge = unread > 0 ? `<span class="min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-700 text-white text-[11px] font-bold flex items-center justify-center">${unread > 99 ? '99+' : unread}</span>` : '';
+      return { id: room.id, html: `<div class="room-card bg-white border-t border-slate-100 first:border-t-0 px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50 transition-colors" data-room-id="${id}">
         ${listEditMode ? `<button type="button" class="edit-icon-btn relative shrink-0 rounded-xl hover:opacity-80" data-room-id="${id}" aria-label="${el.iconTitle}" title="${el.iconTitle}">${roomIconHtml(room)}<span class="absolute -right-1 -bottom-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center shadow"><i class="fa-solid fa-pen"></i></span></button>` : ''}
         <button class="open-room-btn flex items-center gap-3 flex-1 min-w-0 text-left" data-room-id="${id}">
           ${listEditMode ? '' : roomIconHtml(room)}
@@ -553,7 +569,7 @@
     document.title = baseTitle;
     activeRoomRef = database.ref(dataPrefix + 'roomLog/' + activeRoomId);
     initialBuffer = document.createDocumentFragment();
-    els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
+    els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 soft-card hover:text-indigo-700 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
     lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
     oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
     if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); }
@@ -799,7 +815,7 @@
   }
   function applyIconPreview() {
     const box = $('iconPreview');
-    box.style.background = isHexColor(pickedColor) ? pickedColor : '#e0e7ff';
+    box.style.background = isHexColor(pickedColor) ? pickedColor : '#d9e6df';
     box.innerHTML = pickedIcon ? safeHtml(pickedIcon) : '<i class="fa-solid fa-comments text-indigo-600 text-2xl"></i>';
     document.querySelectorAll('#iconGrid .icon-choice').forEach(btn => btn.classList.toggle('ring-2', (btn.dataset.icon || null) === pickedIcon));
     document.querySelectorAll('#iconGrid .icon-choice').forEach(btn => btn.classList.toggle('ring-indigo-500', (btn.dataset.icon || null) === pickedIcon));
@@ -1032,7 +1048,7 @@
     wrap.dataset.chatMessage = 'true'; wrap.dataset.messageTimestamp = String(data.timestamp || ''); wrap.dataset.key = key || '';
     const sender = document.createElement('span'); sender.className = 'text-xs font-semibold text-slate-600 mb-1 px-1'; sender.textContent = isMine ? tx.me : (data.sender || '');
     const row = document.createElement('div'); row.className = `flex items-end gap-1.5 w-full ${isMine ? 'justify-end' : 'justify-start'}`;
-    const bubble = document.createElement('div'); bubble.className = (isMine ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[85%] shadow-sm') + ' msg-bubble';
+    const bubble = document.createElement('div'); bubble.className = (isMine ? 'bg-indigo-700 text-white rounded-3xl rounded-br-lg px-4 py-2.5 max-w-[85%] soft-card' : 'bg-white text-slate-800 rounded-3xl rounded-bl-lg px-4 py-2.5 max-w-[85%] soft-card') + ' msg-bubble';
     fillBubble(bubble, data, isMine, key);
     const time = document.createElement('span'); time.className = 'text-[10px] text-slate-400 whitespace-nowrap shrink-0 pb-0.5'; time.dataset.messageTimestamp = String(data.timestamp || ''); time.textContent = formatMessageTime(data.timestamp);
     if (isMine) { row.appendChild(time); row.appendChild(bubble); } else { row.appendChild(bubble); row.appendChild(time); }
@@ -1178,7 +1194,7 @@
   }
   function makeDateSeparator(stamp, s) {
     const sep = document.createElement('div'); sep.className = 'message-date-separator flex justify-center my-4 w-full';
-    const label = document.createElement('span'); label.className = 'bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full';
+    const label = document.createElement('span'); label.className = 'bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card';
     label.textContent = new Date(stamp).toLocaleDateString(s.locale, { timeZone:s.zone, year:'numeric', month:'long', day:'numeric', weekday:'long' });
     sep.appendChild(label);
     return sep;
