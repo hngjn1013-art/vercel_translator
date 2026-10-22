@@ -241,9 +241,10 @@
   const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname === '[::1]';
   // 로컬 개발 데이터는 local/* 아래에 저장한다. 채팅 기록은 roomLog에 저장하며, 기존 rooms 데이터는 필요할 때 복사한다.
   const dataPrefix = isLocal ? 'local/' : '';
-  const myUserIdInitial = params.get('user') || localStorage.getItem('myUserId') || ('User_' + Math.floor(Math.random() * 1000));
+  const storedUserId = (() => { try { return localStorage.getItem('myUserId'); } catch (error) { return null; } })();
+  const myUserIdInitial = params.get('user') || storedUserId || ('User_' + Math.floor(Math.random() * 1000));
   let myUserId = myUserIdInitial;
-  localStorage.setItem('myUserId', myUserId);
+  try { localStorage.setItem('myUserId', myUserId); } catch (error) {}
 
   const firebaseConfig = { databaseURL: 'https://translator-16b24-default-rtdb.firebaseio.com/' };
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -917,7 +918,7 @@
   $('saveUserBtn').addEventListener('click', () => {
     const val = $('newUserIdInput').value.trim();
     if (!val) return;
-    myUserId = val; localStorage.setItem('myUserId', myUserId); renderUserChips(); closeUserModal();
+    myUserId = val; try { localStorage.setItem('myUserId', myUserId); } catch (error) {} renderUserChips(); closeUserModal();
   });
   $('newUserIdInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('saveUserBtn').click(); });
   function avatarColor(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360; return 'hsl(' + h + ' 62% 46%)'; }
@@ -1033,13 +1034,13 @@
 
   function fillBubble(bubble, data, isMine, key) {
     const x = xt();
-    let html = `<div class="text-xs md:text-sm ${isMine ? 'text-indigo-200' : 'text-slate-400'} font-normal break-words leading-relaxed">${safeHtml(data.text || '')}</div>`;
+    let html = `<div class="text-xs md:text-sm ${isMine ? 'text-indigo-200' : 'text-slate-600'} font-normal break-words whitespace-pre-wrap leading-relaxed">${safeHtml(data.text || '')}</div>`;
     if (data.translatedText) {
-      html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
+      html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1 whitespace-pre-wrap">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
     } else if (isMine && key && translatingKeys.has(key)) {
       // 방금 보낸 메시지는 번역이 끝날 때까지 '번역 중'을 보여 주고, 도착한 번역은 먼저 채워 넣는다.
       if (streamingText.get(key)) {
-        html += `<div class="mt-1 pt-1 border-t border-indigo-500/50 text-white text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="min-w-0 flex-1">${safeHtml(streamingText.get(key))}</span></div>`;
+        html += `<div class="mt-1 pt-1 border-t border-indigo-500/50 text-white text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="min-w-0 flex-1 whitespace-pre-wrap">${safeHtml(streamingText.get(key))}</span></div>`;
       } else {
         html += `<div class="mt-1.5 text-xs text-indigo-100 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin text-[10px]"></i><span>${safeHtml(t().translating)}</span></div>`;
       }
@@ -1208,7 +1209,8 @@
     sep.appendChild(label);
     return sep;
   }
-  function timeSettings() { return ({ ko:{locale:'ko-KR',zone:'Asia/Seoul'}, zh:{locale:'zh-TW',zone:'Asia/Taipei'}, ja:{locale:'ja-JP',zone:'Asia/Tokyo'}, en:{locale:'en-US',zone:'America/New_York'} })[uiLang] || {locale:'ko-KR',zone:'Asia/Seoul'}; }
+  // 시간대는 화면 언어가 아니라 기기의 실제 시간대를 따른다. (zone을 비워 두면 Intl이 기기 시간대를 쓴다)
+  function timeSettings() { return ({ ko:{locale:'ko-KR'}, zh:{locale:'zh-TW'}, ja:{locale:'ja-JP'}, en:{locale:'en-US'} })[uiLang] || {locale:'ko-KR'}; }
   function formatMessageTime(timestamp) {
     if (!timestamp) return '';
     const s = timeSettings();
