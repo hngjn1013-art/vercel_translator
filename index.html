@@ -51,6 +51,10 @@
     .user-avatar { width:2rem; height:2rem; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.9rem; flex-shrink:0; }
     .ui-language-option.lang-active { background:#eaf1ed; color:#234438; font-weight:700; }
     #chatApp, #lobbyScreen { background:#f4f2ee; }
+    /* 채팅 헤더 한 줄: 칩은 작게, 내 ID는 이름만 보여준다 */
+    .hdr-pill.chat-chip { height:2.5rem; padding:0 .8rem; gap:.35rem; }
+    #changeUserBtn .pill-label, #changeUserBtn .user-avatar { display:none; }
+    #changeUserBtn .pill-name { max-width:5.5rem; font-size:.8125rem; }
     #textInput { background:transparent; border:0; box-shadow:none; }
     .room-card:active { background:#e9efeb; }
   </style>
@@ -109,26 +113,19 @@
   <!-- 채팅 화면: 방에 정상 입장한 뒤에만 표시 -->
   <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden" style="position:fixed; left:0; right:0; margin:0 auto; max-width:42rem; top: var(--app-top, 0px); height: var(--app-h, 100dvh)">
     <header class="px-3 pt-3 pb-2 flex flex-col gap-2.5 z-10 shrink-0">
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div class="justify-self-start">
-          <button id="roomListBtn" class="h-10 px-4 rounded-full bg-white text-slate-800 text-xs font-semibold hover:bg-slate-100 whitespace-nowrap soft-card"><i class="fa-solid fa-chevron-left mr-1.5"></i><span id="roomListButtonText">목록</span></button>
+      <div class="flex items-center gap-2">
+        <button id="roomListBtn" class="w-10 h-10 rounded-full bg-white text-slate-800 text-sm hover:bg-slate-100 soft-card shrink-0 flex items-center justify-center" aria-label="목록" title="목록"><i class="fa-solid fa-chevron-left"></i><span id="roomListButtonText" class="sr-only">목록</span></button>
+        <div class="min-w-0 flex-1 px-1">
+          <h1 id="uiTitle" class="sr-only">AI 번역</h1>
+          <div id="currentRoomName" class="text-lg font-extrabold text-slate-900 truncate leading-tight tracking-tight"></div>
         </div>
-        <div class="min-w-0 max-w-[58vw] text-center">
-          <h1 id="uiTitle" class="text-[11px] font-semibold text-slate-500 leading-none mb-1">AI 번역</h1>
-          <div id="currentRoomName" class="text-xl font-extrabold text-slate-900 truncate leading-tight tracking-tight"></div>
-        </div>
-        <div class="justify-self-end">
-          <button id="roomSettingsBtn" title="채팅방 설정" class="w-10 h-10 rounded-full bg-white text-slate-700 text-sm hover:bg-slate-100 soft-card"><i class="fa-solid fa-gear"></i></button>
-        </div>
-      </div>
-      <div class="flex items-center justify-between gap-2">
-        <button id="changeUserBtn" type="button" class="hdr-pill min-w-0" title="ID">
+        <button id="changeUserBtn" type="button" class="hdr-pill chat-chip shrink min-w-0" title="ID">
           <span id="userAvatar" class="user-avatar">U</span>
           <span class="min-w-0 text-left"><span id="uiMyIdLabel" class="pill-label">내 ID</span><span id="userDisplay" class="pill-name">UserA</span></span>
           <i class="fa-solid fa-pen pill-sub"></i>
         </button>
         <div class="relative shrink-0">
-          <button id="uiLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="uiLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <button id="uiLanguageButton" type="button" class="hdr-pill lang chat-chip" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="uiLanguageName">한</span></button>
           <div id="uiLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl floating-bar p-2 z-50">
             <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
             <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">한국어</button>
@@ -137,6 +134,7 @@
             <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">English</button>
           </div>
         </div>
+        <button id="roomSettingsBtn" title="채팅방 설정" class="w-10 h-10 rounded-full bg-white text-slate-700 text-sm hover:bg-slate-100 soft-card shrink-0"><i class="fa-solid fa-gear"></i></button>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
         <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
@@ -325,7 +323,7 @@
     try { sessionStorage.setItem('chatUiLanguage', uiLang); } catch (error) {}
     document.documentElement.lang = ({ko:'ko',zh:'zh-TW',ja:'ja',en:'en'})[uiLang];
     const x0 = xt(), t0 = t();
-    setText('uiLanguageName', x0.langName); setText('lobbyLanguageName', x0.langName);
+    setText('uiLanguageName', ({ko:'한',zh:'中',ja:'日',en:'EN'})[uiLang]); setText('lobbyLanguageName', x0.langName);
     setText('lobbyLanguagePopupTitle', t0.languageTitle);
     setText('iconModalTitle', x0.iconTitle); setText('iconGridLabel', x0.iconLabel); setText('colorGridLabel', x0.colorLabel); setText('iconCancelBtn', t0.cancel); setText('iconSaveBtn', t0.save);
     document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
@@ -797,7 +795,8 @@
 
   // ---- 채팅방 아이콘·배경색 선택 ----
   const ICON_CHOICES = ['💬','🗨️','💭','📢','🌍','🌏','✈️','🗺️','🏠','🏢','🏫','🛒','🍜','🍕','🍔','🍣','☕','🍺','🍰','🥗','🎉','🎁','🎂','🎈','🎮','🎵','🎬','📚','🎨','📷','💻','📱','⚽','🏀','⚾','🏃','🚗','🚲','🏖️','⛺','🐶','🐱','🐻','🦊','🐰','🐼','🐸','🦄','❤️','💕','😀','😎','🥰','🤝','👨‍👩‍👧','👫','⭐','🔥','🌙','☀️','🌈','🌸','🍀','💡'];
-  const COLOR_CHOICES = ['#e0e7ff','#fce7f3','#fee2e2','#ffedd5','#fef9c3','#dcfce7','#ccfbf1','#dbeafe','#ede9fe','#f1f5f9','#6366f1','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#0ea5e9','#8b5cf6','#475569'];
+  // 아이보리 + 숲 초록 테마에 맞춘 차분한 색: 앞 10개는 연한 톤, 뒤 10개는 채도를 낮춘 진한 톤
+  const COLOR_CHOICES = ['#dbe8df','#d3ebe3','#ece3cf','#f2e8c4','#f3dccb','#f1d6d6','#e6dcec','#d9e2ec','#e3e0d8','#f4efe4','#3f6b57','#7d8a52','#c4963c','#b8674a','#8c4a52','#6e5578','#4f6a85','#3d7a7a','#7b5e48','#3a403d'];
   let iconTarget = null, pickedIcon = null, pickedColor = null, iconPickerBuilt = false;
 
   function buildIconPicker() {
