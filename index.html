@@ -326,6 +326,22 @@
   const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
   const showError = (id, message) => { const el = $(id); if (el) { el.textContent = message; el.classList.remove('hidden'); } };
   const clearError = id => { const el = $(id); if (el) { el.textContent = ''; el.classList.add('hidden'); } };
+  // 화면을 막는 alert() 대신 잠깐 떴다 사라지는 알림. 스크린리더에는 role="status"로 읽힌다.
+  let toastTimer = null;
+  function showToast(message) {
+    let toast = $('appToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'appToast'; toast.setAttribute('role', 'status');
+      toast.className = 'fixed left-1/2 -translate-x-1/2 z-[70] max-w-[90vw] px-5 py-3 rounded-full bg-slate-800 text-white text-sm font-medium text-center floating-bar';
+      toast.style.bottom = 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
+  }
 
   function safeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -645,7 +661,7 @@
     }
     // Firebase keys cannot contain these characters. Existing room IDs normally do not contain them.
     if (/[.#$\[\]\/]/.test(roomId)) {
-      alert(xt().invalidLink);
+      showToast(xt().invalidLink);
       leaveToLobby();
       return;
     }
@@ -664,7 +680,7 @@
         const snapshot = await directoryRef.child(roomId).once('value');
         if (!snapshot.exists()) {
           // 없는 방 주소로 들어오면 방을 만들지 않고 목록으로 돌려보낸다.
-          alert(xt().roomNotFound);
+          showToast(xt().roomNotFound);
           leaveToLobby();
           return;
         }
@@ -680,7 +696,7 @@
       els.chatApp.classList.add('hidden');
       showEntryPrompt(meta);
     } catch (error) {
-      alert(xt().roomLoadFail);
+      showToast(xt().roomLoadFail);
       console.error(error);
       leaveToLobby();
     }
@@ -795,7 +811,7 @@
       }
       setText('settingsPasswordStatus', nextPassword ? t().passwordOn : t().passwordOff);
       closeModal(els.roomSettingsModal);
-      alert(nameChanged && !passwordActionNeeded ? xt().renamed : xt().saved);
+      showToast(nameChanged && !passwordActionNeeded ? xt().renamed : xt().saved);
     } catch (error) {
       showError('settingsError', error.message || 'Error');
     } finally { btn.disabled = false; }
@@ -876,7 +892,7 @@
       await directoryRef.child(iconTarget.id).update({ icon: pickedIcon || null, color: pickedColor || null });
       closeIconPicker();
     } catch (error) {
-      console.error(error); alert(xt().iconSaveFail);
+      console.error(error); showToast(xt().iconSaveFail);
     } finally { btn.disabled = false; }
   });
 
@@ -1046,7 +1062,7 @@
     translatingKeys.delete(key);
     streamingText.delete(key);
     try { await savePromise; }
-    catch (error) { console.error('Could not send message:', error); alert(xt().sendFail); return; }
+    catch (error) { console.error('Could not send message:', error); showToast(xt().sendFail); return; }
     if (result.ok) {
       try { await msgRef.update({ translatedText: result.text }); }
       catch (error) { console.error('Could not save translation:', error); updateMessageElement(key, data); }
@@ -1173,7 +1189,7 @@
       refreshMessageTimes();
       box.scrollTop = prevTop + (box.scrollHeight - prevHeight); // 보던 위치 유지
     } catch (error) {
-      console.error('Load older failed:', error); alert(xt().loadMoreFail);
+      console.error('Load older failed:', error); showToast(xt().loadMoreFail);
     } finally { loadingMore = false; updateLoadMoreButton(); }
   }
 
@@ -1233,7 +1249,7 @@
       await activeRoomRef.child(key).update({ translatedText: result.text });
       updateMessageElement(key, Object.assign({}, data, { translatedText: result.text }));
     } catch (error) {
-      console.error('Retry save failed:', error); alert(xt().sendFail);
+      console.error('Retry save failed:', error); showToast(xt().sendFail);
       btn.disabled = false; if (icon) icon.classList.remove('fa-spin');
     }
   }
