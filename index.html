@@ -57,6 +57,16 @@
     #changeUserBtn .pill-name { max-width:5.5rem; font-size:.8125rem; }
     #textInput { background:transparent; border:0; box-shadow:none; }
     .room-card:active { background:#e9efeb; }
+    /* 키보드 포커스 표시: Tailwind의 outline-none을 덮어써서 모든 요소에 같은 초록 테두리를 보여준다 */
+    :focus-visible { outline: 2px solid #3f7059 !important; outline-offset: 2px; }
+    /* 메시지 입력창은 글상자 대신 바깥 알약 전체에 테두리를 둔다 */
+    #textInput:focus-visible { outline: none !important; }
+    footer .floating-bar:has(#textInput:focus-visible) { outline: 2px solid #3f7059; outline-offset: 2px; }
+    /* 색 선택 입력은 투명이라 감싼 라벨에 테두리를 둔다 */
+    label:has(#customColorInput:focus-visible) { outline: 2px solid #3f7059; outline-offset: 2px; }
+    #customColorInput:focus-visible { outline: none !important; }
+    /* 터치 기기에서 16px 미만 입력창을 누르면 iOS가 화면을 확대하므로 16px로 맞춘다 */
+    @media (pointer: coarse) { input:not([type=checkbox]):not([type=color]), textarea, select { font-size: 16px !important; } }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen max-w-2xl mx-auto relative">
