@@ -65,6 +65,8 @@
     /* 색 선택 입력은 투명이라 감싼 라벨에 테두리를 둔다 */
     label:has(#customColorInput:focus-visible) { outline: 2px solid #3f7059; outline-offset: 2px; }
     #customColorInput:focus-visible { outline: none !important; }
+    /* 모달이 열릴 때 포커스를 받는 안쪽 패널에는 테두리를 그리지 않는다 */
+    [role="dialog"] > div:focus { outline: none !important; }
     /* 터치 기기에서 16px 미만 입력창을 누르면 iOS가 화면을 확대하므로 16px로 맞춘다 */
     @media (pointer: coarse) { input:not([type=checkbox]):not([type=color]), textarea, select { font-size: 16px !important; } }
   </style>
@@ -165,7 +167,7 @@
   </div>
 
   <!-- 비밀번호 입장 모달 -->
-  <div id="entryModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="entryModal" role="dialog" aria-modal="true" aria-labelledby="entryModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
       <div class="flex items-start gap-3"><div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
       <input id="entryPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
@@ -175,7 +177,7 @@
   </div>
 
   <!-- 새 채팅방 생성 모달 -->
-  <div id="createRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="createRoomModal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="createModalTitle" class="font-bold text-slate-800 text-lg">새 채팅방 만들기</h3><button id="createModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
       <div><label id="roomNameLabel" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
@@ -187,7 +189,7 @@
   </div>
 
   <!-- 채팅방 비밀번호 설정 모달 -->
-  <div id="roomSettingsModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="roomSettingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="settingsModalTitle" class="font-bold text-slate-800 text-lg">채팅방 설정</h3><button id="settingsModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
       <div><label for="settingsRoomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
@@ -201,7 +203,7 @@
   </div>
 
   <!-- 채팅방 아이콘·배경색 변경 모달 -->
-  <div id="iconPickerModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="iconPickerModal" role="dialog" aria-modal="true" aria-labelledby="iconModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
       <div class="flex items-center justify-between"><h3 id="iconModalTitle" class="font-bold text-slate-800 text-lg">아이콘 변경</h3><button id="iconModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
       <div class="flex items-center gap-3">
@@ -215,7 +217,7 @@
   </div>
 
   <!-- 채팅방 삭제 확인 모달 -->
-  <div id="deleteRoomModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="deleteRoomModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
       <div class="flex items-start gap-3">
         <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></div>
@@ -235,7 +237,7 @@
   </div>
 
   <!-- 사용자 ID 수정 모달 -->
-  <div id="userModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+  <div id="userModal" role="dialog" aria-modal="true" aria-labelledby="uiModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
       <div class="flex justify-between items-center border-b border-slate-100 pb-2"><h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-gear text-indigo-600"></i> <span id="uiModalTitle">사용자 ID 설정</span></h3><button id="closeModalBtn" class="text-slate-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
       <div><label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-200 bg-slate-50 rounded-2xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
@@ -340,7 +342,9 @@
     document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
     const tx = t();
     setText('lobbyTitle', tx.title); setText('lobbySubtitle', tx.subtitle); setText('createRoomButtonText', tx.create); setText('roomListHeading', tx.list); setText('roomLoadingText', tx.loading); setText('uiTitle', xt().roomTag); setText('uiMyIdLabel', xt().myIdShort); setText('lobbyMyIdLabel', xt().myIdShort); setText('uiSourceLabel', tx.source); setText('uiTargetLabel', tx.target); setText('uiWelcome', tx.welcome); setText('roomListButtonText', tx.roomListButton); setText('uiLanguagePopupTitle', tx.languageTitle); setText('createModalTitle', tx.createTitle); setText('roomNameLabel', tx.roomName); setText('createPasswordLabel', tx.usePassword); setText('createPasswordHint', tx.passwordHint); setText('newRoomPasswordLabel', tx.password); setText('createRoomSubmitBtn', tx.make); setText('createRoomCancelBtn', tx.cancel); setText('entryModalTitle', tx.enterTitle); setText('entryModalDesc', tx.enterDesc); setText('entryConfirmBtn', tx.enter); setText('entryCancelBtn', tx.cancel); setText('settingsModalTitle', tx.roomSettings); setText('passwordActionLabel', tx.chooseAction); setText('currentPasswordLabel', tx.currentPassword); setText('settingsNewPasswordLabel', tx.newPassword); setText('settingsSaveBtn', tx.save); setText('settingsCancelBtn', tx.cancel); setText('uiIdLabel', tx.idLabel); setText('cancelModalBtn', tx.cancel); setText('saveUserBtn', tx.save); setText('uiModalTitle', tx.changeId);
-    els.roomSearchInput.placeholder = tx.search; els.entryPasswordInput.placeholder = tx.password; $('newRoomPasswordInput').placeholder = tx.password; $('currentPasswordInput').placeholder = tx.currentPassword; $('settingsNewPasswordInput').placeholder = tx.newPassword; $('newUserIdInput').placeholder = tx.idPlaceholder; els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder; els.micBtn.title = tx.mic; els.sendBtn.title = tx.send; $('changeUserBtn').title = tx.changeId;
+    els.roomSearchInput.placeholder = tx.search; els.entryPasswordInput.placeholder = tx.password; $('newRoomPasswordInput').placeholder = tx.password; $('currentPasswordInput').placeholder = tx.currentPassword; $('settingsNewPasswordInput').placeholder = tx.newPassword; $('newUserIdInput').placeholder = tx.idPlaceholder; els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder; els.micBtn.title = tx.mic; els.sendBtn.title = tx.send; $('changeUserBtn').title = tx.changeId; $('roomSettingsBtn').title = tx.roomSettings;
+    // 아이콘만 있거나 라벨이 없는 컨트롤에 스크린리더용 이름을 붙인다.
+    [['roomSettingsBtn', tx.roomSettings], ['micBtn', tx.mic], ['sendBtn', tx.send], ['createModalCloseBtn', tx.cancel], ['settingsModalCloseBtn', tx.cancel], ['iconModalCloseBtn', tx.cancel], ['closeModalBtn', tx.cancel], ['roomSearchInput', tx.search], ['textInput', tx.inputPlaceholder], ['sourceLangSelect', tx.source], ['targetLangSelect', tx.target], ['uiLanguageButton', tx.languageTitle + ': ' + x0.langName], ['lobbyLanguageButton', tx.languageTitle + ': ' + x0.langName]].forEach(([id, label]) => $(id).setAttribute('aria-label', label));
     setText('deleteModalTitle', xt().deleteTitle); setText('deleteModalDesc', xt().deleteDesc); setText('deleteConfirmBtn', xt().deleteBtn); setText('deleteCancelBtn', tx.cancel); setText('deletePasswordLabel', tx.password); $('deletePasswordInput').placeholder = tx.password;
     const selects = [els.sourceLangSelect, els.targetLangSelect];
     selects.forEach(select => Array.from(select.options).forEach(option => { const idx = ({ko:0,zh:1,ja:2,en:3})[option.value]; option.textContent = tx.languageNames[idx]; }));
@@ -351,8 +355,21 @@
     renderRoomList();
   }
 
-  function openModal(el) { el.classList.remove('hidden'); }
-  function closeModal(el) { el.classList.add('hidden'); }
+  // 모달을 열면 포커스를 모달 안으로 옮기고, 닫으면 열기 전에 누른 버튼으로 돌려준다.
+  const modalOpeners = new Map();
+  function openModal(el) {
+    modalOpeners.set(el, document.activeElement);
+    el.classList.remove('hidden');
+    const panel = el.firstElementChild;
+    if (panel) { panel.setAttribute('tabindex', '-1'); panel.focus({ preventScroll: true }); }
+  }
+  function closeModal(el) {
+    const wasOpen = !el.classList.contains('hidden');
+    el.classList.add('hidden');
+    const opener = modalOpeners.get(el);
+    modalOpeners.delete(el);
+    if (wasOpen && opener && opener.isConnected && typeof opener.focus === 'function') opener.focus({ preventScroll: true });
+  }
 
 
   // ---- 채팅방 목록: 마지막 메시지 · 시간 · 안 읽은 개수 ----
@@ -917,6 +934,24 @@
     languagePairs.forEach(([buttonId, popupId]) => {
       if (!$(buttonId).contains(event.target) && !$(popupId).contains(event.target)) $(popupId).classList.add('hidden');
     });
+  });
+
+  // Esc로 닫기 + Tab 포커스를 열려 있는 모달 안에 가둔다. Esc는 각 모달의 '취소' 버튼을 누른 것과 같다.
+  const modalCancelIds = { entryModal:'entryCancelBtn', createRoomModal:'createRoomCancelBtn', roomSettingsModal:'settingsCancelBtn', iconPickerModal:'iconCancelBtn', deleteRoomModal:'deleteCancelBtn', userModal:'cancelModalBtn' };
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' && event.key !== 'Tab') return;
+    const modal = Array.from(document.querySelectorAll('[role="dialog"]')).filter(node => !node.classList.contains('hidden')).pop();
+    if (!modal) {
+      if (event.key === 'Escape') languagePairs.forEach(([, popupId]) => $(popupId).classList.add('hidden'));
+      return;
+    }
+    if (event.key === 'Escape') { event.preventDefault(); const cancel = $(modalCancelIds[modal.id]); if (cancel) cancel.click(); return; }
+    const focusable = Array.from(modal.querySelectorAll('button, input, select, textarea, a[href]')).filter(node => !node.disabled && node.getClientRects().length);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1], active = document.activeElement;
+    if (!modal.contains(active) || active === modal.firstElementChild) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
+    else if (event.shiftKey && active === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
   });
 
   // 기존 사용자 ID 변경 기능
