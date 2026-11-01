@@ -11,6 +11,13 @@ const ATTEMPTS = [
 const TOTAL_TIMEOUT_MS = 30000;
 // 글자가 오다가 이 시간 동안 아무것도 안 오면 끊는다. (글자가 계속 오는 동안은 끊지 않는다)
 const STREAM_IDLE_TIMEOUT_MS = 15000;
+// 번역할 수 있는 언어. index.html의 langMap 값과 같아야 한다. (아무 문자열이나 지시문에 넣지 않도록 정해진 값만 받는다)
+const ALLOWED_TARGET_LANGS = new Set([
+  "Korean",
+  "Traditional Chinese (Taiwan, 繁體中文)",
+  "Japanese",
+  "English"
+]);
 
 // 서버가 보내는 "data: ..." 줄을 하나씩 꺼내 주는 함수
 async function* readSse(response) {
@@ -116,9 +123,9 @@ module.exports = async function (req, res) {
       });
     }
 
-    if (typeof targetLang !== "string" || !targetLang.trim()) {
+    if (typeof targetLang !== "string" || !ALLOWED_TARGET_LANGS.has(targetLang)) {
       return res.status(400).json({
-        error: "Target language is required."
+        error: "Unsupported target language."
       });
     }
 
@@ -145,11 +152,20 @@ module.exports = async function (req, res) {
       `Output only the translated text without the tags, explanations or quotation marks.`;
     const userText = `<text>${text.trim()}</text>`;
 
+    // 사용자가 페이지를 떠나 연결이 끊기면 Gemini 요청도 멈춰서 사용량을 아낀다.
+    const clientGone = new AbortController();
+    res.on("close", () => { if (!res.writableFinished) clientGone.abort(); });
+
     const { attempt, first, error: lastError } = await raceFirstChunk({
       attempts: ATTEMPTS,
       startStream: ({ model }, signal) => geminiStream({ model, systemPrompt, userText, signal }),
-      totalTimeoutMs: TOTAL_TIMEOUT_MS
+      totalTimeoutMs: TOTAL_TIMEOUT_MS,
+      signal: clientGone.signal
     });
+    if (clientGone.signal.aborted) {
+      if (attempt) attempt.stop();
+      return;
+    }
 
     if (!attempt) {
       const status = lastError?.status;
@@ -169,6 +185,7 @@ module.exports = async function (req, res) {
     res.setHeader("Cache-Control", "no-store");
     res.write(JSON.stringify({ d: first }) + "\n");
     attempt.arm(STREAM_IDLE_TIMEOUT_MS);
+    clientGone.signal.addEventListener("abort", attempt.stop, { once: true });
 
     try {
       for await (const piece of attempt.iterator) {
@@ -177,6 +194,7 @@ module.exports = async function (req, res) {
       }
       res.write(JSON.stringify({ done: true }) + "\n");
     } catch (streamError) {
+      if (clientGone.signal.aborted) return; // 받을 사람이 없으니 더 쓰지 않는다
       console.error("gemini stream broke:", streamError.message);
       res.write(JSON.stringify({ error: true }) + "\n");
     } finally {
