@@ -56,6 +56,18 @@
     #changeUserBtn .pill-label, #changeUserBtn .user-avatar { display:none; }
     #changeUserBtn .pill-name { max-width:5.5rem; font-size:.8125rem; }
     #textInput { background:transparent; border:0; box-shadow:none; }
+    /* 다른 사람이 입력 중일 때 입력칸 바로 위, 채팅창 아래 가장자리에 겹쳐 띄운다 */
+    #typingIndicator { position:absolute; left:1rem; right:1rem; bottom:100%; margin-bottom:.2rem; pointer-events:none; opacity:0; transform:translateY(4px); transition:opacity .2s, transform .2s; }
+    #typingIndicator.show { opacity:1; transform:none; }
+    #typingIndicator > span { display:inline-flex; align-items:center; max-width:100%; padding:.2rem .7rem; border-radius:9999px; background:rgba(244,242,238,.9); backdrop-filter:blur(4px); color:#76736b; font-size:.75rem; line-height:1.2rem; }
+    #typingName { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; max-width:11rem; }
+    #typingRest { white-space:nowrap; }
+    .typing-dots { display:inline-flex; gap:2px; margin-left:.35rem; flex-shrink:0; }
+    .typing-dots i { width:4px; height:4px; border-radius:9999px; background:currentColor; animation:typing-blink 1.2s infinite both; }
+    .typing-dots i:nth-child(2) { animation-delay:.2s; }
+    .typing-dots i:nth-child(3) { animation-delay:.4s; }
+    @keyframes typing-blink { 0%, 80%, 100% { opacity:.25; } 40% { opacity:1; } }
+    #chatContainer.typing-pad { padding-bottom:2.25rem; }
     .room-card:active { background:#e9efeb; }
     /* 키보드 포커스 표시: Tailwind의 outline-none을 덮어써서 모든 요소에 같은 초록 테두리를 보여준다 */
     :focus-visible { outline: 2px solid #3f7059 !important; outline-offset: 2px; }
@@ -156,7 +168,8 @@
     <main id="chatContainer" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3 chat-scroll">
       <div class="text-center my-2"><span id="uiWelcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
     </main>
-    <footer class="px-3 pt-1 z-10 shrink-0 safe-bottom">
+    <footer class="relative px-3 pt-1 z-10 shrink-0 safe-bottom">
+      <div id="typingIndicator" role="status" aria-live="polite"><span><span id="typingName"></span><span id="typingRest"></span><span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></span></div>
       <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1.5 animate-pulse px-3 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
       <div class="floating-bar bg-white rounded-[1.75rem] p-1.5 flex items-end gap-1.5">
         <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-lg hover:bg-slate-200 transition-all shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
@@ -281,10 +294,10 @@
 
   // 화면 언어별 추가 문구 (목록 수정 모드, 삭제 창, 알림창 등)
   const EDIT_LABELS = {
-    ko: { edit:'수정', done:'완료', settings:'채팅방 설정', remove:'채팅방 삭제', deleteFail:'채팅방 삭제에 실패했습니다. Firebase 권한을 확인해 주세요.', deleteTitle:'채팅방 삭제', deleteDesc:'이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?', deleteBtn:'삭제', keepPw:'비밀번호 유지', keepSetting:'비밀번호 설정 유지', langName:'한국어', myIdShort:'내 ID', roomTag:'AI 번역', iconTitle:'아이콘 변경', iconLabel:'아이콘', colorLabel:'배경 색', defaultIcon:'기본 아이콘', resetColor:'기본 색', customColor:'직접 선택', iconSaveFail:'아이콘을 저장하지 못했습니다. Firebase 권한을 확인해 주세요.', roomLoadFail:'채팅방 정보를 불러오지 못했습니다. Firebase 연결과 보안 규칙을 확인해 주세요.', invalidLink:'올바르지 않은 채팅방 링크입니다.', roomNotFound:'존재하지 않는 방입니다.', renamed:'채팅방 이름을 변경했습니다.', saved:'채팅방 설정을 저장했습니다.', sendFail:'메시지를 전송하지 못했습니다. Firebase 연결을 확인해 주세요.', sentWithoutTranslation:'원문만 전송되었습니다.', loadMore:'이전 대화 더보기', loadMoreFail:'이전 대화를 불러오지 못했습니다.', retryTranslate:'다시 번역', copyTranslation:'번역문 복사', copied:'복사됨', noMessages:'아직 메시지가 없어요', lockedPreview:'비밀번호가 설정된 방이에요', yesterday:'어제', newMessage:'새 메시지' },
-    zh: { edit:'編輯', done:'完成', settings:'聊天室設定', remove:'刪除聊天室', deleteFail:'刪除聊天室失敗，請檢查 Firebase 權限。', deleteTitle:'刪除聊天室', deleteDesc:'此聊天室與所有對話紀錄將被刪除且無法復原。確定要刪除嗎？', deleteBtn:'刪除', keepPw:'維持密碼', keepSetting:'維持目前設定', langName:'繁體中文', myIdShort:'我的 ID', roomTag:'AI 翻譯', iconTitle:'更換圖示', iconLabel:'圖示', colorLabel:'背景顏色', defaultIcon:'預設圖示', resetColor:'預設顏色', customColor:'自訂顏色', iconSaveFail:'無法儲存圖示，請檢查 Firebase 權限。', roomLoadFail:'無法載入聊天室資訊，請檢查 Firebase 連線與安全規則。', invalidLink:'聊天室連結無效。', roomNotFound:'此聊天室不存在。', renamed:'聊天室名稱已變更。', saved:'聊天室設定已儲存。', sendFail:'訊息傳送失敗，請檢查 Firebase 連線。', sentWithoutTranslation:'已僅傳送原文。', loadMore:'載入更早的對話', loadMoreFail:'無法載入先前的對話。', retryTranslate:'重新翻譯', copyTranslation:'複製翻譯', copied:'已複製', noMessages:'還沒有訊息', lockedPreview:'此聊天室已設定密碼', yesterday:'昨天', newMessage:'新訊息' },
-    ja: { edit:'編集', done:'完了', settings:'ルーム設定', remove:'ルームを削除', deleteFail:'ルームの削除に失敗しました。Firebaseの権限を確認してください。', deleteTitle:'ルームを削除', deleteDesc:'このルームとすべての会話履歴が削除され、元に戻せません。本当に削除しますか？', deleteBtn:'削除', keepPw:'パスワードを維持', keepSetting:'現在の設定を維持', langName:'日本語', myIdShort:'自分のID', roomTag:'AI翻訳', iconTitle:'アイコンを変更', iconLabel:'アイコン', colorLabel:'背景色', defaultIcon:'デフォルト', resetColor:'デフォルト色', customColor:'色を選ぶ', iconSaveFail:'アイコンを保存できませんでした。Firebaseの権限を確認してください。', roomLoadFail:'ルーム情報を読み込めませんでした。Firebaseの接続とセキュリティルールを確認してください。', invalidLink:'ルームのリンクが正しくありません。', roomNotFound:'存在しないルームです。', renamed:'ルーム名を変更しました。', saved:'ルーム設定を保存しました。', sendFail:'メッセージを送信できませんでした。Firebaseの接続を確認してください。', sentWithoutTranslation:'原文のみ送信されました。', loadMore:'以前の会話を表示', loadMoreFail:'以前の会話を読み込めませんでした。', retryTranslate:'再翻訳', copyTranslation:'翻訳をコピー', copied:'コピーしました', noMessages:'まだメッセージがありません', lockedPreview:'パスワードが設定されたルームです', yesterday:'昨日', newMessage:'新着メッセージ' },
-    en: { edit:'Edit', done:'Done', settings:'Room settings', remove:'Delete room', deleteFail:'Failed to delete the room. Please check Firebase permissions.', deleteTitle:'Delete room', deleteDesc:'This room and all its messages will be deleted and cannot be restored. Delete it?', deleteBtn:'Delete', keepPw:'Keep password', keepSetting:'Keep current setting', langName:'English', myIdShort:'My ID', roomTag:'AI Translate', iconTitle:'Change icon', iconLabel:'Icon', colorLabel:'Background color', defaultIcon:'Default icon', resetColor:'Default color', customColor:'Pick a color', iconSaveFail:'Could not save the icon. Please check Firebase permissions.', roomLoadFail:'Could not load the room. Please check your Firebase connection and rules.', invalidLink:'Invalid room link.', roomNotFound:'This room does not exist.', renamed:'Room name updated.', saved:'Room settings saved.', sendFail:'Could not send the message. Please check your Firebase connection.', sentWithoutTranslation:'Sent without translation.', loadMore:'Load earlier messages', loadMoreFail:'Could not load earlier messages.', retryTranslate:'Retry translation', copyTranslation:'Copy translation', copied:'Copied', noMessages:'No messages yet', lockedPreview:'Password-protected room', yesterday:'Yesterday', newMessage:'New message' }
+    ko: { edit:'수정', done:'완료', settings:'채팅방 설정', remove:'채팅방 삭제', deleteFail:'채팅방 삭제에 실패했습니다. Firebase 권한을 확인해 주세요.', deleteTitle:'채팅방 삭제', deleteDesc:'이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?', deleteBtn:'삭제', keepPw:'비밀번호 유지', keepSetting:'비밀번호 설정 유지', langName:'한국어', myIdShort:'내 ID', roomTag:'AI 번역', iconTitle:'아이콘 변경', iconLabel:'아이콘', colorLabel:'배경 색', defaultIcon:'기본 아이콘', resetColor:'기본 색', customColor:'직접 선택', iconSaveFail:'아이콘을 저장하지 못했습니다. Firebase 권한을 확인해 주세요.', roomLoadFail:'채팅방 정보를 불러오지 못했습니다. Firebase 연결과 보안 규칙을 확인해 주세요.', invalidLink:'올바르지 않은 채팅방 링크입니다.', roomNotFound:'존재하지 않는 방입니다.', renamed:'채팅방 이름을 변경했습니다.', saved:'채팅방 설정을 저장했습니다.', sendFail:'메시지를 전송하지 못했습니다. Firebase 연결을 확인해 주세요.', sentWithoutTranslation:'원문만 전송되었습니다.', loadMore:'이전 대화 더보기', loadMoreFail:'이전 대화를 불러오지 못했습니다.', retryTranslate:'다시 번역', copyTranslation:'번역문 복사', copied:'복사됨', noMessages:'아직 메시지가 없어요', lockedPreview:'비밀번호가 설정된 방이에요', yesterday:'어제', newMessage:'새 메시지', typingSuffix:' 입력 중', typingMany:'{n}명이 입력 중' },
+    zh: { edit:'編輯', done:'完成', settings:'聊天室設定', remove:'刪除聊天室', deleteFail:'刪除聊天室失敗，請檢查 Firebase 權限。', deleteTitle:'刪除聊天室', deleteDesc:'此聊天室與所有對話紀錄將被刪除且無法復原。確定要刪除嗎？', deleteBtn:'刪除', keepPw:'維持密碼', keepSetting:'維持目前設定', langName:'繁體中文', myIdShort:'我的 ID', roomTag:'AI 翻譯', iconTitle:'更換圖示', iconLabel:'圖示', colorLabel:'背景顏色', defaultIcon:'預設圖示', resetColor:'預設顏色', customColor:'自訂顏色', iconSaveFail:'無法儲存圖示，請檢查 Firebase 權限。', roomLoadFail:'無法載入聊天室資訊，請檢查 Firebase 連線與安全規則。', invalidLink:'聊天室連結無效。', roomNotFound:'此聊天室不存在。', renamed:'聊天室名稱已變更。', saved:'聊天室設定已儲存。', sendFail:'訊息傳送失敗，請檢查 Firebase 連線。', sentWithoutTranslation:'已僅傳送原文。', loadMore:'載入更早的對話', loadMoreFail:'無法載入先前的對話。', retryTranslate:'重新翻譯', copyTranslation:'複製翻譯', copied:'已複製', noMessages:'還沒有訊息', lockedPreview:'此聊天室已設定密碼', yesterday:'昨天', newMessage:'新訊息', typingSuffix:' 正在輸入', typingMany:'{n} 人正在輸入' },
+    ja: { edit:'編集', done:'完了', settings:'ルーム設定', remove:'ルームを削除', deleteFail:'ルームの削除に失敗しました。Firebaseの権限を確認してください。', deleteTitle:'ルームを削除', deleteDesc:'このルームとすべての会話履歴が削除され、元に戻せません。本当に削除しますか？', deleteBtn:'削除', keepPw:'パスワードを維持', keepSetting:'現在の設定を維持', langName:'日本語', myIdShort:'自分のID', roomTag:'AI翻訳', iconTitle:'アイコンを変更', iconLabel:'アイコン', colorLabel:'背景色', defaultIcon:'デフォルト', resetColor:'デフォルト色', customColor:'色を選ぶ', iconSaveFail:'アイコンを保存できませんでした。Firebaseの権限を確認してください。', roomLoadFail:'ルーム情報を読み込めませんでした。Firebaseの接続とセキュリティルールを確認してください。', invalidLink:'ルームのリンクが正しくありません。', roomNotFound:'存在しないルームです。', renamed:'ルーム名を変更しました。', saved:'ルーム設定を保存しました。', sendFail:'メッセージを送信できませんでした。Firebaseの接続を確認してください。', sentWithoutTranslation:'原文のみ送信されました。', loadMore:'以前の会話を表示', loadMoreFail:'以前の会話を読み込めませんでした。', retryTranslate:'再翻訳', copyTranslation:'翻訳をコピー', copied:'コピーしました', noMessages:'まだメッセージがありません', lockedPreview:'パスワードが設定されたルームです', yesterday:'昨日', newMessage:'新着メッセージ', typingSuffix:'さんが入力中', typingMany:'{n}人が入力中' },
+    en: { edit:'Edit', done:'Done', settings:'Room settings', remove:'Delete room', deleteFail:'Failed to delete the room. Please check Firebase permissions.', deleteTitle:'Delete room', deleteDesc:'This room and all its messages will be deleted and cannot be restored. Delete it?', deleteBtn:'Delete', keepPw:'Keep password', keepSetting:'Keep current setting', langName:'English', myIdShort:'My ID', roomTag:'AI Translate', iconTitle:'Change icon', iconLabel:'Icon', colorLabel:'Background color', defaultIcon:'Default icon', resetColor:'Default color', customColor:'Pick a color', iconSaveFail:'Could not save the icon. Please check Firebase permissions.', roomLoadFail:'Could not load the room. Please check your Firebase connection and rules.', invalidLink:'Invalid room link.', roomNotFound:'This room does not exist.', renamed:'Room name updated.', saved:'Room settings saved.', sendFail:'Could not send the message. Please check your Firebase connection.', sentWithoutTranslation:'Sent without translation.', loadMore:'Load earlier messages', loadMoreFail:'Could not load earlier messages.', retryTranslate:'Retry translation', copyTranslation:'Copy translation', copied:'Copied', noMessages:'No messages yet', lockedPreview:'Password-protected room', yesterday:'Yesterday', newMessage:'New message', typingSuffix:' is typing', typingMany:'{n} people are typing' }
   };
   let listEditMode = false;
   let settingsTarget = null; // 설정 모달이 가리키는 방 (채팅 중인 방 또는 목록에서 고른 방)
@@ -368,6 +381,7 @@
     document.querySelectorAll('.retry-translate-btn span').forEach(node => { node.textContent = xt().retryTranslate; });
     document.querySelectorAll('.copy-translation-btn').forEach(node => { node.title = xt().copyTranslation; node.setAttribute('aria-label', xt().copyTranslation); });
     if (messagesListener) refreshMessageTimes();
+    renderTyping();
     renderRoomList();
   }
 
@@ -590,6 +604,7 @@
     enterSeq++; // 진행 중이던 입장 작업은 무시한다.
     if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); messagesQuery = null; }
     if (isRecording) els.micBtn.click();
+    clearTyping(); unwatchTyping();
     if (activeRoomId && roomSummaries[activeRoomId]) roomSummaries[activeRoomId].unread = 0;
     activeRoomId = null; activeRoomMeta = null; activeRoomRef = null;
     historyReady = false; hiddenUnread = 0; initialBuffer = null;
@@ -632,6 +647,7 @@
     changedListener = snapshot => { const data = snapshot.val(); if (data) updateMessageElement(snapshot.key, data); };
     messagesQuery.on('child_added', messagesListener, error => console.error('Message listener error:', error));
     messagesQuery.on('child_changed', changedListener);
+    watchTyping(activeRoomId);
     setUILanguage(uiLang);
     try {
       const initial = await messagesQuery.once('value');
@@ -927,7 +943,8 @@
       }
       await Promise.all([
         directoryRef.child(id).remove(),
-        database.ref(dataPrefix + 'roomLog/' + id).remove()
+        database.ref(dataPrefix + 'roomLog/' + id).remove(),
+        database.ref(dataPrefix + 'roomTyping/' + id).remove().catch(() => {})
       ]);
       try { localStorage.removeItem(lastReadStorageKey(id)); } catch (error) {}
       closeDeleteModal();
@@ -979,7 +996,8 @@
   $('saveUserBtn').addEventListener('click', () => {
     const val = $('newUserIdInput').value.trim();
     if (!val) return;
-    myUserId = val; try { localStorage.setItem('myUserId', myUserId); } catch (error) {} renderUserChips(); closeUserModal();
+    clearTyping(); // 예전 닉네임으로 남은 입력 중 표시를 지운다.
+    myUserId = val; try { localStorage.setItem('myUserId', myUserId); } catch (error) {} renderUserChips(); renderTyping(); closeUserModal();
   });
   $('newUserIdInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('saveUserBtn').click(); });
   function avatarColor(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360; return 'hsl(' + h + ' 62% 46%)'; }
@@ -1075,7 +1093,7 @@
   }
   $('sendBtn').addEventListener('click', async () => {
     const val = els.textInput.value.trim(); if (!val) return;
-    els.textInput.value = ''; resizeTextInput();
+    els.textInput.value = ''; resizeTextInput(); clearTyping();
     // 마이크가 켜져 있으면 인식을 새로 시작해서, 이미 보낸 말이 다음 입력에 되살아나지 않게 한다.
     if (isRecording && recognition) { try { recognition.abort(); } catch (error) {} }
     await sendMessage(val);
@@ -1083,7 +1101,7 @@
   els.textInput.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('sendBtn').click(); }
   });
-  els.textInput.addEventListener('input', resizeTextInput);
+  els.textInput.addEventListener('input', () => { resizeTextInput(); notifyTyping(); });
   function resizeTextInput() {
     els.textInput.style.height = '48px';
     const maxHeight = 128;
@@ -1092,6 +1110,85 @@
     els.textInput.style.overflowY = els.textInput.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }
   function scrollChatToBottom() { requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; requestAnimationFrame(() => { els.chatContainer.scrollTop = els.chatContainer.scrollHeight; }); }); }
+
+  // ---- 입력 중 표시 ----
+  // roomTyping/{방}/{닉네임 키} = { name, ts }. 입력하는 동안 3초마다 갱신하고, 5초 동안 입력이 없거나 보내면 지운다.
+  // 받는 쪽은 서버 시간 기준 8초가 지난 항목을 무시해서, 접속이 갑자기 끊긴 사람의 표시가 남지 않게 한다.
+  const TYPING_REFRESH = 3000, TYPING_IDLE = 5000, TYPING_STALE = 8000;
+  // Firebase 키에 쓸 수 없는 글자(. # $ [ ] /)와 %를 %XX로 바꾼다.
+  const typingKey = name => String(name).replace(/[.#$\[\]\/%]/g, ch => '%' + ch.charCodeAt(0).toString(16).toUpperCase());
+  let typingRef = null, typingSentAt = 0, typingIdleTimer = null;
+  let typingQuery = null, typingListener = null, typingEntries = {}, typingRenderTimer = null, typingHideTimer = null;
+  let serverTimeOffset = 0;
+  database.ref('.info/serverTimeOffset').on('value', snapshot => { serverTimeOffset = Number(snapshot.val()) || 0; });
+
+  function notifyTyping() {
+    if (!activeRoomId) return;
+    if (!els.textInput.value.trim()) { clearTyping(); return; }
+    clearTimeout(typingIdleTimer);
+    typingIdleTimer = setTimeout(clearTyping, TYPING_IDLE);
+    if (typingRef && Date.now() - typingSentAt < TYPING_REFRESH) return;
+    if (!typingRef) {
+      typingRef = database.ref(dataPrefix + 'roomTyping/' + activeRoomId + '/' + typingKey(myUserId));
+      typingRef.onDisconnect().remove().catch(() => {});
+    }
+    typingSentAt = Date.now();
+    typingRef.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Typing status:', error));
+  }
+  function clearTyping() {
+    clearTimeout(typingIdleTimer); typingIdleTimer = null;
+    if (!typingRef) return;
+    const ref = typingRef; typingRef = null; typingSentAt = 0;
+    ref.onDisconnect().cancel().catch(() => {});
+    ref.remove().catch(() => {});
+  }
+  function watchTyping(roomId) {
+    typingQuery = database.ref(dataPrefix + 'roomTyping/' + roomId);
+    typingListener = snapshot => { typingEntries = snapshot.val() || {}; renderTyping(); };
+    typingQuery.on('value', typingListener, error => console.warn('Typing listener:', error));
+  }
+  function unwatchTyping() {
+    if (typingQuery) { typingQuery.off('value', typingListener); typingQuery = null; }
+    typingEntries = {};
+    renderTyping();
+  }
+  // 한국어 주격 조사: 받침 없는 한글로 끝나면 '가', 그 밖에는 '이'
+  function koSubjectParticle(name) {
+    const code = String(name).trim().slice(-1).charCodeAt(0);
+    return code >= 0xAC00 && code <= 0xD7A3 && (code - 0xAC00) % 28 === 0 ? '가' : '이';
+  }
+  function renderTyping() {
+    clearTimeout(typingRenderTimer);
+    const now = Date.now() + serverTimeOffset;
+    const names = [];
+    let nextExpiry = Infinity;
+    Object.values(typingEntries).forEach(entry => {
+      if (!entry || !entry.name || entry.name === myUserId) return;
+      const age = now - Number(entry.ts || 0);
+      if (age > TYPING_STALE) return;
+      names.push(entry.name);
+      nextExpiry = Math.min(nextExpiry, TYPING_STALE - age);
+    });
+    // 새 이벤트가 오지 않아도 가장 먼저 만료되는 항목 시각에 다시 그린다.
+    if (nextExpiry !== Infinity) typingRenderTimer = setTimeout(renderTyping, nextExpiry + 50);
+    const box = $('typingIndicator'), chat = els.chatContainer, x = xt();
+    // 화면 낭독기가 같은 문구를 반복해 읽지 않도록 바뀔 때만 고친다.
+    const put = (id, value) => { const el = $(id); if (el.textContent !== value) el.textContent = value; };
+    if (names.length) {
+      clearTimeout(typingHideTimer);
+      const one = names.length === 1;
+      put('typingName', one ? names[0] : '');
+      put('typingRest', one ? (uiLang === 'ko' ? koSubjectParticle(names[0]) : '') + x.typingSuffix : x.typingMany.replace('{n}', names.length));
+      if (!box.classList.contains('show')) {
+        const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 60;
+        box.classList.add('show'); chat.classList.add('typing-pad');
+        if (atBottom) scrollChatToBottom();
+      }
+    } else if (box.classList.contains('show')) {
+      box.classList.remove('show'); chat.classList.remove('typing-pad');
+      typingHideTimer = setTimeout(() => { put('typingName', ''); put('typingRest', ''); }, 250);
+    }
+  }
 
   function fillBubble(bubble, data, isMine, key) {
     const x = xt();
@@ -1314,6 +1411,7 @@
       for (let i = 0; i < event.results.length; i++) spoken += event.results[i][0].transcript;
       spoken = spoken.trim();
       els.textInput.value = sttBaseText && spoken ? sttBaseText + ' ' + spoken : sttBaseText + spoken; resizeTextInput();
+      notifyTyping(); // 값을 코드로 바꾸면 input 이벤트가 나지 않으므로 직접 알린다.
     };
     recognition.onerror = event => {
       console.warn('Speech recognition:', event.error);
