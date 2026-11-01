@@ -328,8 +328,6 @@
   let uiLang = (() => { try { return sessionStorage.getItem('chatUiLanguage') || localStorage.getItem('chatUiLanguage') || 'ko'; } catch (error) { return 'ko'; } })();
   if (!LANGS[uiLang]) uiLang = 'ko';
   let room = null;                    // 지금 들어가 있는 방 세션 (목록 화면이면 null)
-  let allRooms = {};
-  let directoryLive = false;          // true면 allRooms가 서버에서 받은 최신 데이터 (캐시 아님)
   const translatingKeys = new Set();  // 지금 번역 중인 내 메시지 key
   const streamingText = new Map();    // 번역 중인 메시지 key -> 지금까지 도착한 번역
   let pendingEntryMeta = null;
@@ -343,9 +341,6 @@
   let statusTimer = null;
   const PAGE_SIZE = 30;              // 한 번에 불러오는 대화 수
   const baseTitle = document.title;
-  const roomSummaries = {};           // 목록용: 방 id -> 마지막 메시지·안 읽은 개수
-  const roomWatchers = {};
-  let listRenderTimer = null;
   const roomLink = id => window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(id);
   const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
   const showError = (id, message) => { const el = $(id); if (el) { el.textContent = message; el.classList.remove('hidden'); } };
@@ -419,77 +414,122 @@
   const lastReadStorageKey = id => 'lastRead:' + (isLocal ? 'local:' : 'prod:') + id;
   function readLastRead(id) { try { return localStorage.getItem(lastReadStorageKey(id)); } catch (error) { return null; } }
   function writeLastRead(id, key) { try { localStorage.setItem(lastReadStorageKey(id), key); } catch (error) {} }
-  // 목록 캐시: 다음 접속 때 서버 응답을 기다리지 않고 지난번 목록을 바로 보여준다. (비밀번호 값은 저장하지 않는다)
-  const roomListCacheKey = 'roomListCache:' + (isLocal ? 'local' : 'prod');
-  function saveRoomListCache() {
-    try {
-      const rooms = {}, summaries = {};
-      Object.keys(allRooms).forEach(id => {
-        const r = allRooms[id];
-        if (!r || !r.id || !r.name) return;
-        rooms[id] = { id: r.id, name: r.name, icon: r.icon, color: r.color, createdAt: r.createdAt, password: r.password ? true : '' };
-        const sm = roomSummaries[id];
-        if (sm && sm.loaded) summaries[id] = { loaded: true, key: sm.key, sender: sm.sender, text: r.password ? '' : sm.text, timestamp: sm.timestamp, unread: sm.unread || 0 };
+  // ---- 채팅방 목록 module ----
+  // 방 목록(이름·비밀번호 여부·아이콘)과 방마다의 요약(마지막 메시지, 안 읽은 개수, 접속 중 인원)을 이 module이 모두 지킨다.
+  // 방마다 지켜보는 구독도 watchRoom 한 곳에서 열고 닫는다. 밖에서는 start/list/get/summary/markRead만 쓴다.
+  const roomDirectory = (() => {
+    let rooms = {};
+    let live = false;                 // true면 rooms가 서버에서 받은 최신 데이터 (캐시 아님)
+    let started = false, renderTimer = null;
+    const summaries = {};             // 방 id -> { loaded, key, sender, text, timestamp, unread, present }
+    const watchers = {};              // 방 id -> 구독 해제 함수
+    // 목록 캐시: 다음 접속 때 서버 응답을 기다리지 않고 지난번 목록을 바로 보여준다. (비밀번호 값과 접속 인원은 저장하지 않는다)
+    const cacheKey = 'roomListCache:' + (isLocal ? 'local' : 'prod');
+
+    const isRoom = r => r && r.id && r.name;
+    const summaryOf = id => summaries[id] || (summaries[id] = { loaded: false, unread: 0, present: 0 });
+    function changed() {
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); saveCache(); }, 30);
+    }
+    function saveCache() {
+      try {
+        const cachedRooms = {}, cachedSummaries = {};
+        Object.values(rooms).filter(isRoom).forEach(r => {
+          cachedRooms[r.id] = { id: r.id, name: r.name, icon: r.icon, color: r.color, createdAt: r.createdAt, password: r.password ? true : '' };
+          const sm = summaries[r.id];
+          if (sm && sm.loaded) cachedSummaries[r.id] = { loaded: true, key: sm.key, sender: sm.sender, text: r.password ? '' : sm.text, timestamp: sm.timestamp, unread: sm.unread || 0 };
+        });
+        localStorage.setItem(cacheKey, JSON.stringify({ rooms: cachedRooms, summaries: cachedSummaries }));
+      } catch (error) {}
+    }
+    function loadCache() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (!cached || !cached.rooms || !Object.keys(cached.rooms).length) return;
+        rooms = cached.rooms;
+        Object.entries(cached.summaries || {}).forEach(([id, sm]) => { summaries[id] = Object.assign({ present: 0 }, sm); });
+        syncWatchers();
+        renderRoomList(); updateLobbyTitle();
+      } catch (error) {}
+    }
+    // 목록에 있는 방만 지켜보고, 사라진 방은 구독과 요약을 지운다.
+    function syncWatchers() {
+      const ids = Object.values(rooms).filter(isRoom).map(r => r.id);
+      ids.forEach(id => { if (!watchers[id]) watchers[id] = watchRoom(id); });
+      Object.keys(watchers).forEach(id => {
+        if (ids.includes(id)) return;
+        watchers[id](); delete watchers[id]; delete summaries[id];
       });
-      localStorage.setItem(roomListCacheKey, JSON.stringify({ rooms, summaries }));
-    } catch (error) {}
-  }
-  function loadRoomListCache() {
-    try {
-      const cached = JSON.parse(localStorage.getItem(roomListCacheKey) || 'null');
-      if (!cached || !cached.rooms || !Object.keys(cached.rooms).length) return;
-      allRooms = cached.rooms;
-      Object.assign(roomSummaries, cached.summaries || {});
-      syncRoomWatchers();
-      renderRoomList();
-      updateLobbyTitle();
-    } catch (error) {}
-  }
-  function scheduleRoomListRender() {
-    clearTimeout(listRenderTimer);
-    listRenderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); saveRoomListCache(); }, 30);
-  }
+    }
+    function watchRoom(id) {
+      const offs = [];
+      const listen = (query, handler) => {
+        query.on('value', handler, error => console.warn('Room watcher error:', id, error));
+        offs.push(() => query.off('value', handler));
+      };
+      // 대화 전체가 아니라 마지막 메시지 1개만 지켜본다.
+      listen(db.log(id).orderByKey().limitToLast(1), snapshot => {
+        let last = null;
+        snapshot.forEach(child => { last = Object.assign({ key: child.key }, child.val() || {}); });
+        onLatestMessage(id, last);
+      });
+      // 지금 이 방에 들어와 있는 사람 수 (같은 닉네임은 한 명)
+      listen(db.presence(id), snapshot => {
+        const names = new Set(Object.values(snapshot.val() || {}).map(entry => entry && entry.name).filter(Boolean));
+        summaryOf(id).present = names.size;
+        changed();
+      });
+      return () => offs.forEach(off => off());
+    }
+    async function onLatestMessage(id, last) {
+      const sm = summaryOf(id);
+      sm.loaded = true;
+      if (!last) { Object.assign(sm, { key: null, sender: null, text: null, timestamp: null, unread: 0 }); changed(); return; }
+      Object.assign(sm, { key: last.key, sender: last.sender, text: last.text, timestamp: last.timestamp });
+      changed();
+      const lastRead = readLastRead(id);
+      let unread = 0;
+      if (!lastRead) {
+        writeLastRead(id, last.key); // 처음 보는 방은 지금까지의 메시지를 읽은 것으로 본다
+      } else if (lastRead < last.key) {
+        try {
+          const snap = await db.log(id).orderByKey().startAt(lastRead).limitToFirst(101).once('value');
+          snap.forEach(child => { if (child.key !== lastRead && (child.val() || {}).sender !== myUserId) unread++; });
+        } catch (error) { console.warn('Unread count failed:', id, error); }
+      }
+      // 세는 사이 더 새 메시지가 왔으면 그 계산에 맡긴다.
+      if (summaries[id] && summaries[id].key === last.key) { summaries[id].unread = unread; changed(); }
+    }
+
+    return {
+      // 처음 한 번만 캐시를 보여 주고 서버 목록을 구독한다. (여러 번 불러도 된다)
+      start() {
+        if (started) return;
+        started = true;
+        loadCache();
+        const showError = error => { els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`; };
+        try {
+          directoryRef.on('value', snapshot => {
+            rooms = snapshot.val() || {};
+            live = true;
+            syncWatchers();
+            renderRoomList(); updateLobbyTitle(); saveCache();
+          }, showError);
+        } catch (error) { showError(error); }
+      },
+      list: () => Object.values(rooms).filter(isRoom),
+      get: id => rooms[id] || null,
+      isLive: () => live,
+      summary: id => summaries[id] || null,
+      markRead(id) { if (summaries[id]) summaries[id].unread = 0; },
+      totalUnread: () => Object.values(rooms).filter(isRoom).reduce((sum, r) => sum + ((summaries[r.id] && summaries[r.id].unread) || 0), 0)
+    };
+  })();
   function updateLobbyTitle() {
     if (room) return;
-    const total = Object.keys(allRooms).reduce((sum, id) => sum + ((roomSummaries[id] && roomSummaries[id].unread) || 0), 0);
+    const total = roomDirectory.totalUnread();
     document.title = total > 0 ? '(' + (total > 99 ? '99+' : total) + ') ' + baseTitle : baseTitle;
-  }
-  function syncRoomWatchers() {
-    const ids = Object.keys(allRooms).filter(id => allRooms[id] && allRooms[id].name);
-    ids.forEach(id => { if (!roomWatchers[id]) attachRoomWatcher(id); });
-    Object.keys(roomWatchers).forEach(id => {
-      if (ids.includes(id)) return;
-      roomWatchers[id].query.off('value', roomWatchers[id].handler);
-      delete roomWatchers[id]; delete roomSummaries[id];
-    });
-  }
-  function attachRoomWatcher(id) {
-    // 방마다 '마지막 메시지 1개'만 지켜본다. (대화 전체를 받지 않는다)
-    const query = db.log(id).orderByKey().limitToLast(1);
-    const handler = snapshot => {
-      let last = null;
-      snapshot.forEach(child => { last = Object.assign({ key: child.key }, child.val() || {}); });
-      onLatestMessage(id, last);
-    };
-    query.on('value', handler, error => console.warn('Room watcher error:', id, error));
-    roomWatchers[id] = { query, handler };
-  }
-  async function onLatestMessage(id, last) {
-    if (!last) { roomSummaries[id] = { loaded: true, unread: 0 }; scheduleRoomListRender(); return; }
-    const previous = roomSummaries[id];
-    roomSummaries[id] = { loaded: true, key: last.key, sender: last.sender, text: last.text, timestamp: last.timestamp, unread: previous ? previous.unread : 0 };
-    scheduleRoomListRender();
-    const lastRead = readLastRead(id);
-    let unread = 0;
-    if (!lastRead) {
-      writeLastRead(id, last.key); // 처음 보는 방은 지금까지의 메시지를 읽은 것으로 본다
-    } else if (lastRead < last.key) {
-      try {
-        const snap = await db.log(id).orderByKey().startAt(lastRead).limitToFirst(101).once('value');
-        snap.forEach(child => { if (child.key !== lastRead && (child.val() || {}).sender !== myUserId) unread++; });
-      } catch (error) { console.warn('Unread count failed:', id, error); }
-    }
-    if (roomSummaries[id] && roomSummaries[id].key === last.key) { roomSummaries[id].unread = unread; scheduleRoomListRender(); }
   }
   function formatListTime(timestamp) {
     const s = timeSettings(), now = Date.now();
@@ -516,9 +556,9 @@
     setText('roomEditToggleText', listEditMode ? labels.done : labels.edit);
     $('roomEditToggleIcon').className = 'fa-solid ' + (listEditMode ? 'fa-check' : 'fa-pen') + ' mr-1';
     const query = (els.roomSearchInput.value || '').trim().toLocaleLowerCase();
-    let rows = Object.values(allRooms).filter(room => room && room.id && room.name);
+    let rows = roomDirectory.list();
     // 카카오톡처럼 최근에 대화가 있었던 방이 위로 온다. (대화가 없으면 만든 시각 기준)
-    const activityOf = room => Number((roomSummaries[room.id] && roomSummaries[room.id].timestamp) || room.createdAt || 0);
+    const activityOf = room => Number((roomDirectory.summary(room.id) || {}).timestamp || room.createdAt || 0);
     rows.sort((a, b) => activityOf(b) - activityOf(a));
     if (query) rows = rows.filter(room => String(room.name).toLocaleLowerCase().includes(query) || String(room.id).toLocaleLowerCase().includes(query));
     setText('roomCountLabel', String(rows.length));
@@ -531,7 +571,7 @@
       const roomName = safeHtml(room.name || room.id);
       const id = safeHtml(room.id);
       const el = t();
-      const summary = roomSummaries[room.id];
+      const summary = roomDirectory.summary(room.id);
       const unread = summary ? (summary.unread || 0) : 0;
       // 비밀번호가 있는 방은 마지막 메시지를 보여주지 않는다.
       const previewText = locked ? el.lockedPreview : (summary && summary.loaded ? (summary.text ? String(summary.text).replace(/\s+/g, ' ').trim() : el.noMessages) : '');
@@ -580,27 +620,8 @@
     });
   }
 
-  async function loadRoomList() {
-    loadRoomListCache();
-    try {
-      directoryRef.on('value', snapshot => {
-        allRooms = snapshot.val() || {};
-        directoryLive = true;
-        syncRoomWatchers();
-        renderRoomList();
-        updateLobbyTitle();
-        saveRoomListCache();
-      }, error => {
-        els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`;
-      });
-    } catch (error) {
-      els.roomList.innerHTML = `<p class="text-center text-sm text-red-500 py-8">${safeHtml(error.message || 'Database error')}</p>`;
-    }
-  }
-
   // 페이지를 새로 불러오지 않고 화면만 바꾼다. (Firebase 연결·목록 데이터를 그대로 재사용)
-  let lobbyLoaded = false;
-  function navigateToRoom(id) {
+    function navigateToRoom(id) {
     // 이미 방에 들어가는 중이면 추가로 누른 것은 무시한다. (누를 때마다 뒤로가기 기록이 쌓이는 것을 막음)
     if (new URLSearchParams(window.location.search).get('room')) return;
     history.pushState({ fromLobby: true }, '', window.location.pathname + '?room=' + encodeURIComponent(id));
@@ -648,7 +669,7 @@
   function closeActiveRoom() {
     if (isRecording) els.micBtn.click();
     if (room) {
-      if (roomSummaries[room.id]) roomSummaries[room.id].unread = 0;
+      roomDirectory.markRead(room.id);
       room.leave(); room = null;
     }
     renderTyping(); updateNewMsgButton(); renderPresence();
@@ -711,8 +732,8 @@
       els.lobbyScreen.classList.remove('hidden');
       els.chatApp.classList.add('hidden');
       document.title = baseTitle;
-      if (!lobbyLoaded) { lobbyLoaded = true; await loadRoomList(); }
-      else { renderRoomList(); updateLobbyTitle(); }
+      roomDirectory.start();
+      renderRoomList(); updateLobbyTitle();
       return;
     }
     // Firebase keys cannot contain these characters. Existing room IDs normally do not contain them.
@@ -722,7 +743,7 @@
       return;
     }
     // 비밀번호 없는 방은 서버 응답을 기다리지 않고 바로 채팅 화면과 로딩 표시를 보여준다.
-    const preview = allRooms[roomId];
+    const preview = roomDirectory.get(roomId);
     if (preview && preview.name && !preview.password) {
       $('currentRoomName').textContent = preview.name;
       els.chatContainer.innerHTML = `<div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>${safeHtml(t().loading || '...')}</div>`;
@@ -731,7 +752,8 @@
     }
     try {
       // 목록에서 이미 최신 방 정보를 받아 둔 경우에는 서버에 다시 묻지 않는다.
-      let meta = (directoryLive && allRooms[roomId] && allRooms[roomId].id) ? Object.assign({}, allRooms[roomId]) : null;
+      const known = roomDirectory.isLive() && roomDirectory.get(roomId);
+      let meta = known && known.id ? Object.assign({}, known) : null;
       if (!meta) {
         const snapshot = await directoryRef.child(roomId).once('value');
         if (!snapshot.exists()) {
@@ -874,16 +896,16 @@
 
   els.roomList.addEventListener('click', async event => {
     const iconBtn = event.target.closest('.edit-icon-btn');
-    if (iconBtn) { openIconPicker(allRooms[iconBtn.dataset.roomId]); return; }
+    if (iconBtn) { openIconPicker(roomDirectory.get(iconBtn.dataset.roomId)); return; }
     const deleteBtn = event.target.closest('.delete-room-btn');
     const settingsBtn = event.target.closest('.settings-room-btn');
     const openBtn = event.target.closest('.open-room-btn');
     if (settingsBtn) {
-      openRoomSettings(allRooms[settingsBtn.dataset.roomId]);
+      openRoomSettings(roomDirectory.get(settingsBtn.dataset.roomId));
       return;
     }
     if (deleteBtn) {
-      openDeleteModal(allRooms[deleteBtn.dataset.roomId]);
+      openDeleteModal(roomDirectory.get(deleteBtn.dataset.roomId));
       return;
     }
     if (openBtn) {
