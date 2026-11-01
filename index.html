@@ -88,19 +88,19 @@
   <section id="lobbyScreen" class="min-h-screen bg-slate-50 flex flex-col">
     <header class="px-5 pt-6 pb-2">
       <div class="min-w-0">
-        <h1 id="lobbyTitle" class="font-extrabold text-slate-900 text-3xl tracking-tight leading-tight">AI 번역 채팅방</h1>
-        <p id="lobbySubtitle" class="text-sm text-slate-500 mt-1.5">채팅방을 선택하거나 새로 만들어 보세요.</p>
+        <h1 id="lobbyTitle" data-i18n="title" class="font-extrabold text-slate-900 text-3xl tracking-tight leading-tight">AI 번역 채팅방</h1>
+        <p id="lobbySubtitle" data-i18n="subtitle" class="text-sm text-slate-500 mt-1.5">채팅방을 선택하거나 새로 만들어 보세요.</p>
       </div>
       <div class="flex items-center justify-between gap-2 mt-3">
-        <button id="lobbyChangeUserBtn" type="button" class="hdr-pill min-w-0" title="ID">
+        <button id="lobbyChangeUserBtn" data-i18n-title="changeId" type="button" class="hdr-pill min-w-0" title="ID">
           <span id="lobbyUserAvatar" class="user-avatar">U</span>
-          <span class="min-w-0 text-left"><span id="lobbyMyIdLabel" class="pill-label">내 ID</span><span id="lobbyUserDisplay" class="pill-name">UserA</span></span>
+          <span class="min-w-0 text-left"><span id="lobbyMyIdLabel" data-i18n="myIdShort" class="pill-label">내 ID</span><span id="lobbyUserDisplay" class="pill-name">UserA</span></span>
           <i class="fa-solid fa-pen pill-sub"></i>
         </button>
         <div class="relative shrink-0">
-          <button id="lobbyLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="lobbyLanguageName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
+          <button id="lobbyLanguageButton" type="button" class="hdr-pill lang" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="lobbyLanguageName" data-i18n="langName">한국어</span><i class="fa-solid fa-chevron-down pill-sub"></i></button>
           <div id="lobbyLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl floating-bar p-2 z-50">
-            <p id="lobbyLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
+            <p id="lobbyLanguagePopupTitle" data-i18n="languageTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
             <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">한국어</button>
             <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">繁體中文</button>
             <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">日本語</button>
@@ -112,23 +112,23 @@
     <main class="flex-1 px-4 pt-4 pb-32">
       <div class="relative mb-5">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-        <input id="roomSearchInput" type="search" class="w-full pl-11 pr-4 h-12 rounded-full border-0 bg-slate-100 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600/30" placeholder="채팅방 검색">
+        <input id="roomSearchInput" data-i18n-placeholder="search" data-i18n-aria="search" type="search" class="w-full pl-11 pr-4 h-12 rounded-full border-0 bg-slate-100 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600/30" placeholder="채팅방 검색">
       </div>
       <div class="flex items-center justify-between mb-2.5 px-1">
         <div class="flex items-baseline gap-2 min-w-0">
-          <h2 id="roomListHeading" class="text-sm font-bold text-slate-900">채팅방 목록</h2>
+          <h2 id="roomListHeading" data-i18n="list" class="text-sm font-bold text-slate-900">채팅방 목록</h2>
           <span id="roomCountLabel" class="text-xs text-slate-500"></span>
         </div>
         <button id="roomEditToggleBtn" type="button" class="text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 rounded-full px-3.5 py-1.5 whitespace-nowrap soft-card"><i id="roomEditToggleIcon" class="fa-solid fa-pen mr-1"></i><span id="roomEditToggleText">수정</span></button>
       </div>
       <div id="roomList" class="bg-white rounded-3xl overflow-hidden soft-card">
-        <div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i><span id="roomLoadingText">채팅방을 불러오는 중...</span></div>
+        <div class="text-center text-sm text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i><span id="roomLoadingText" data-i18n="loading">채팅방을 불러오는 중...</span></div>
       </div>
       <p class="text-center text-[11px] text-slate-400 mt-6">AI Translation Chat</p>
     </main>
     <div class="fixed bottom-0 left-0 right-0 z-30 pointer-events-none" style="padding: 0 1rem max(1.25rem, env(safe-area-inset-bottom))">
       <div class="max-w-2xl mx-auto pointer-events-auto">
-        <button id="createRoomOpenBtn" class="floating-bar w-full h-14 rounded-full bg-indigo-700 hover:bg-indigo-800 active:scale-[.99] transition text-white text-base font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i><span id="createRoomButtonText">새 채팅방</span></button>
+        <button id="createRoomOpenBtn" class="floating-bar w-full h-14 rounded-full bg-indigo-700 hover:bg-indigo-800 active:scale-[.99] transition text-white text-base font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i><span id="createRoomButtonText" data-i18n="create">새 채팅방</span></button>
       </div>
     </div>
   </section>
@@ -137,43 +137,43 @@
   <div id="chatApp" class="hidden h-[100dvh] min-h-[420px] flex flex-col overflow-hidden" style="position:fixed; left:0; right:0; margin:0 auto; max-width:42rem; top: var(--app-top, 0px); height: var(--app-h, 100dvh)">
     <header class="px-3 pt-3 pb-2 flex flex-col gap-2.5 z-10 shrink-0">
       <div class="flex items-center gap-2">
-        <button id="roomListBtn" class="w-10 h-10 rounded-full bg-white text-slate-800 text-sm hover:bg-slate-100 soft-card shrink-0 flex items-center justify-center" aria-label="목록" title="목록"><i class="fa-solid fa-chevron-left"></i><span id="roomListButtonText" class="sr-only">목록</span></button>
+        <button id="roomListBtn" data-i18n-title="roomListButton" data-i18n-aria="roomListButton" class="w-10 h-10 rounded-full bg-white text-slate-800 text-sm hover:bg-slate-100 soft-card shrink-0 flex items-center justify-center" aria-label="목록" title="목록"><i class="fa-solid fa-chevron-left"></i><span id="roomListButtonText" data-i18n="roomListButton" class="sr-only">목록</span></button>
         <div class="min-w-0 flex-1 px-1">
-          <h1 id="uiTitle" class="sr-only">AI 번역</h1>
+          <h1 id="uiTitle" data-i18n="roomTag" class="sr-only">AI 번역</h1>
           <div id="currentRoomName" class="text-lg font-extrabold text-slate-900 truncate leading-tight tracking-tight"></div>
         </div>
-        <button id="changeUserBtn" type="button" class="hdr-pill chat-chip shrink min-w-0" title="ID">
+        <button id="changeUserBtn" data-i18n-title="changeId" type="button" class="hdr-pill chat-chip shrink min-w-0" title="ID">
           <span id="userAvatar" class="user-avatar">U</span>
-          <span class="min-w-0 text-left"><span id="uiMyIdLabel" class="pill-label">내 ID</span><span id="userDisplay" class="pill-name">UserA</span></span>
+          <span class="min-w-0 text-left"><span id="uiMyIdLabel" data-i18n="myIdShort" class="pill-label">내 ID</span><span id="userDisplay" class="pill-name">UserA</span></span>
           <i class="fa-solid fa-pen pill-sub"></i>
         </button>
         <div class="relative shrink-0">
           <button id="uiLanguageButton" type="button" class="hdr-pill lang chat-chip" aria-haspopup="true"><i class="fa-solid fa-globe pill-sub" aria-hidden="true"></i><span id="uiLanguageName">한</span></button>
           <div id="uiLanguagePopup" class="hidden absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl floating-bar p-2 z-50">
-            <p id="uiLanguagePopupTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
+            <p id="uiLanguagePopupTitle" data-i18n="languageTitle" class="text-xs text-slate-500 px-2 py-2">화면 언어 선택</p>
             <button type="button" data-ui-lang="ko" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">한국어</button>
             <button type="button" data-ui-lang="zh" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">繁體中文</button>
             <button type="button" data-ui-lang="ja" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">日本語</button>
             <button type="button" data-ui-lang="en" class="ui-language-option w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-xl">English</button>
           </div>
         </div>
-        <button id="roomSettingsBtn" title="채팅방 설정" class="w-10 h-10 rounded-full bg-white text-slate-700 text-sm hover:bg-slate-100 soft-card shrink-0"><i class="fa-solid fa-gear"></i></button>
+        <button id="roomSettingsBtn" data-i18n-title="roomSettings" data-i18n-aria="roomSettings" title="채팅방 설정" class="w-10 h-10 rounded-full bg-white text-slate-700 text-sm hover:bg-slate-100 soft-card shrink-0"><i class="fa-solid fa-gear"></i></button>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs md:text-sm">
-        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiSourceLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
-        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiTargetLabel" class="text-slate-500 font-medium mr-1.5 shrink-0">번역:</span><select id="targetLangSelect" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="zh">대만어 (繁體中文)</option><option value="ko">한국어</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
+        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiSourceLabel" data-i18n="source" class="text-slate-500 font-medium mr-1.5 shrink-0">입력:</span><select id="sourceLangSelect" data-i18n-aria="source" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="ko">한국어</option><option value="zh">대만어 (繁體中文)</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
+        <div class="flex items-center bg-white soft-card rounded-full px-3.5 py-1.5"><span id="uiTargetLabel" data-i18n="target" class="text-slate-500 font-medium mr-1.5 shrink-0">번역:</span><select id="targetLangSelect" data-i18n-aria="target" class="bg-transparent w-full min-w-0 focus:outline-none font-medium text-slate-700"><option value="zh">대만어 (繁體中文)</option><option value="ko">한국어</option><option value="ja">일본어 (日本語)</option><option value="en">영어 (English)</option></select></div>
       </div>
     </header>
     <main id="chatContainer" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3 chat-scroll">
-      <div class="text-center my-2"><span id="uiWelcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
+      <div class="text-center my-2"><span id="uiWelcome" data-i18n="welcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">채팅방에 연결되었습니다. 대화를 시작하세요!</span></div>
     </main>
     <footer class="relative px-3 pt-1 z-10 shrink-0 safe-bottom">
       <div id="typingIndicator" role="status" aria-live="polite"><span><span id="typingName"></span><span id="typingRest"></span><span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></span></div>
       <div id="statusNotice" class="hidden text-xs text-indigo-600 mb-1.5 animate-pulse px-3 items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i><span id="statusText">AI 번역 중...</span></div>
       <div class="floating-bar bg-white rounded-[1.75rem] p-1.5 flex items-end gap-1.5">
-        <button id="micBtn" title="음성 입력" class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-lg hover:bg-slate-200 transition-all shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
-        <textarea id="textInput" rows="1" placeholder="메시지 입력" autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto rounded-2xl px-2 py-3 text-slate-800 text-sm md:text-base focus:outline-none leading-5"></textarea>
-        <button id="sendBtn" title="전송" class="w-12 h-12 rounded-full bg-indigo-700 text-white flex items-center justify-center text-lg hover:bg-indigo-800 transition-all shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
+        <button id="micBtn" data-i18n-title="mic" data-i18n-aria="mic" title="음성 입력" class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-lg hover:bg-slate-200 transition-all shrink-0"><i id="micIcon" class="fa-solid fa-microphone"></i></button>
+        <textarea id="textInput" data-i18n-aria="inputPlaceholder" rows="1" placeholder="메시지 입력" autocomplete="off" class="flex-1 min-w-0 min-h-12 max-h-32 resize-none overflow-y-auto rounded-2xl px-2 py-3 text-slate-800 text-sm md:text-base focus:outline-none leading-5"></textarea>
+        <button id="sendBtn" data-i18n-title="send" data-i18n-aria="send" title="전송" class="w-12 h-12 rounded-full bg-indigo-700 text-white flex items-center justify-center text-lg hover:bg-indigo-800 transition-all shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </footer>
   </div>
@@ -181,50 +181,50 @@
   <!-- 비밀번호 입장 모달 -->
   <div id="entryModal" role="dialog" aria-modal="true" aria-labelledby="entryModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
-      <div class="flex items-start gap-3"><div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
-      <input id="entryPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
+      <div class="flex items-start gap-3"><div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div class="flex-1"><h3 id="entryModalTitle" data-i18n="enterTitle" class="font-bold text-slate-800">비밀번호 입력</h3><p id="entryModalDesc" data-i18n="enterDesc" class="text-xs text-slate-500 mt-1">이 채팅방에 입장하려면 비밀번호를 입력하세요.</p></div></div>
+      <input id="entryPasswordInput" data-i18n-placeholder="password" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호">
       <p id="entryError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="entryCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="entryConfirmBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">입장</button></div>
+      <div class="flex gap-2"><button id="entryCancelBtn" data-i18n="cancel" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="entryConfirmBtn" data-i18n="enter" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">입장</button></div>
     </div>
   </div>
 
   <!-- 새 채팅방 생성 모달 -->
   <div id="createRoomModal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
-      <div class="flex items-center justify-between"><h3 id="createModalTitle" class="font-bold text-slate-800 text-lg">새 채팅방 만들기</h3><button id="createModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label id="roomNameLabel" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
-      <label class="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl"><span><span id="createPasswordLabel" class="block text-sm font-medium text-slate-700">비밀번호 사용</span><span id="createPasswordHint" class="block text-xs text-slate-500 mt-0.5">필요한 경우 비밀번호를 설정하세요.</span></span><input id="createPasswordToggle" type="checkbox" class="w-5 h-5 accent-indigo-600"></label>
-      <div id="createPasswordFields" class="hidden"><label id="newRoomPasswordLabel" for="newRoomPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label><input id="newRoomPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호 입력"></div>
+      <div class="flex items-center justify-between"><h3 id="createModalTitle" data-i18n="createTitle" class="font-bold text-slate-800 text-lg">새 채팅방 만들기</h3><button id="createModalCloseBtn" data-i18n-aria="cancel" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label id="roomNameLabel" data-i18n="roomName" for="roomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="roomNameInput" data-i18n-placeholder="roomNamePlaceholder" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="예: 친구들과의 채팅"></div>
+      <label class="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl"><span><span id="createPasswordLabel" data-i18n="usePassword" class="block text-sm font-medium text-slate-700">비밀번호 사용</span><span id="createPasswordHint" data-i18n="passwordHint" class="block text-xs text-slate-500 mt-0.5">필요한 경우 비밀번호를 설정하세요.</span></span><input id="createPasswordToggle" type="checkbox" class="w-5 h-5 accent-indigo-600"></label>
+      <div id="createPasswordFields" class="hidden"><label id="newRoomPasswordLabel" data-i18n="password" for="newRoomPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label><input id="newRoomPasswordInput" data-i18n-placeholder="password" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="비밀번호 입력"></div>
       <p id="createRoomError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="createRoomCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="createRoomSubmitBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">만들기</button></div>
+      <div class="flex gap-2"><button id="createRoomCancelBtn" data-i18n="cancel" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="createRoomSubmitBtn" data-i18n="make" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">만들기</button></div>
     </div>
   </div>
 
   <!-- 채팅방 비밀번호 설정 모달 -->
   <div id="roomSettingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
-      <div class="flex items-center justify-between"><h3 id="settingsModalTitle" class="font-bold text-slate-800 text-lg">채팅방 설정</h3><button id="settingsModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label for="settingsRoomNameInput" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
+      <div class="flex items-center justify-between"><h3 id="settingsModalTitle" data-i18n="roomSettings" class="font-bold text-slate-800 text-lg">채팅방 설정</h3><button id="settingsModalCloseBtn" data-i18n-aria="cancel" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label for="settingsRoomNameInput" data-i18n="roomName" class="block text-xs font-medium text-slate-600 mb-1.5">채팅방 이름</label><input id="settingsRoomNameInput" data-i18n-placeholder="roomName" maxlength="40" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="채팅방 이름"></div>
       <div class="p-3 rounded-xl bg-slate-50"><p id="settingsPasswordStatus" class="text-xs text-slate-500"></p></div>
-      <div><label id="passwordActionLabel" for="passwordActionSelect" class="block text-xs font-medium text-slate-600 mb-1.5">변경할 설정</label><select id="passwordActionSelect" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm bg-white"><option value="enable">비밀번호 켜기</option><option value="disable">비밀번호 끄기</option><option value="change">비밀번호 변경</option></select></div>
-      <div id="currentPasswordFields" class="hidden"><label id="currentPasswordLabel" for="currentPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">현재 비밀번호</label><input id="currentPasswordInput" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="현재 비밀번호"></div>
-      <div id="settingsNewPasswordFields"><label id="settingsNewPasswordLabel" for="settingsNewPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">새 비밀번호</label><input id="settingsNewPasswordInput" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="새 비밀번호 입력"></div>
+      <div><label id="passwordActionLabel" data-i18n="chooseAction" for="passwordActionSelect" class="block text-xs font-medium text-slate-600 mb-1.5">변경할 설정</label><select id="passwordActionSelect" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm bg-white"><option value="enable">비밀번호 켜기</option><option value="disable">비밀번호 끄기</option><option value="change">비밀번호 변경</option></select></div>
+      <div id="currentPasswordFields" class="hidden"><label id="currentPasswordLabel" data-i18n="currentPassword" for="currentPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">현재 비밀번호</label><input id="currentPasswordInput" data-i18n-placeholder="currentPassword" type="password" autocomplete="current-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="현재 비밀번호"></div>
+      <div id="settingsNewPasswordFields"><label id="settingsNewPasswordLabel" data-i18n="newPassword" for="settingsNewPasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">새 비밀번호</label><input id="settingsNewPasswordInput" data-i18n-placeholder="newPassword" type="password" autocomplete="new-password" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-indigo-500" placeholder="새 비밀번호 입력"></div>
       <p id="settingsError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="settingsCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="settingsSaveBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
+      <div class="flex gap-2"><button id="settingsCancelBtn" data-i18n="cancel" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="settingsSaveBtn" data-i18n="save" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
     </div>
   </div>
 
   <!-- 채팅방 아이콘·배경색 변경 모달 -->
   <div id="iconPickerModal" role="dialog" aria-modal="true" aria-labelledby="iconModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4 max-h-[90dvh] overflow-y-auto">
-      <div class="flex items-center justify-between"><h3 id="iconModalTitle" class="font-bold text-slate-800 text-lg">아이콘 변경</h3><button id="iconModalCloseBtn" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="flex items-center justify-between"><h3 id="iconModalTitle" data-i18n="iconTitle" class="font-bold text-slate-800 text-lg">아이콘 변경</h3><button id="iconModalCloseBtn" data-i18n-aria="cancel" class="text-slate-400 p-1"><i class="fa-solid fa-xmark"></i></button></div>
       <div class="flex items-center gap-3">
         <div id="iconPreview" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"></div>
         <p id="iconPreviewName" class="text-sm font-semibold text-slate-700 break-words min-w-0"></p>
       </div>
-      <div><p id="iconGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">아이콘</p><div id="iconGrid" class="grid grid-cols-8 gap-1"></div></div>
-      <div><p id="colorGridLabel" class="text-xs font-medium text-slate-600 mb-1.5">배경 색</p><div id="colorGrid" class="flex flex-wrap gap-2 items-center"></div></div>
-      <div class="flex gap-2"><button id="iconCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="iconSaveBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
+      <div><p id="iconGridLabel" data-i18n="iconLabel" class="text-xs font-medium text-slate-600 mb-1.5">아이콘</p><div id="iconGrid" class="grid grid-cols-8 gap-1"></div></div>
+      <div><p id="colorGridLabel" data-i18n="colorLabel" class="text-xs font-medium text-slate-600 mb-1.5">배경 색</p><div id="colorGrid" class="flex flex-wrap gap-2 items-center"></div></div>
+      <div class="flex gap-2"><button id="iconCancelBtn" data-i18n="cancel" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="iconSaveBtn" data-i18n="save" class="flex-1 px-4 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full">저장</button></div>
     </div>
   </div>
 
@@ -234,26 +234,26 @@
       <div class="flex items-start gap-3">
         <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></div>
         <div class="flex-1 min-w-0">
-          <h3 id="deleteModalTitle" class="font-bold text-slate-800">채팅방 삭제</h3>
+          <h3 id="deleteModalTitle" data-i18n="deleteTitle" class="font-bold text-slate-800">채팅방 삭제</h3>
           <p id="deleteModalRoomName" class="text-sm font-semibold text-slate-700 mt-1 break-words"></p>
-          <p id="deleteModalDesc" class="text-xs text-slate-500 mt-1">이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?</p>
+          <p id="deleteModalDesc" data-i18n="deleteDesc" class="text-xs text-slate-500 mt-1">이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?</p>
         </div>
       </div>
       <div id="deletePasswordFields" class="hidden">
-        <label id="deletePasswordLabel" for="deletePasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label>
-        <input id="deletePasswordInput" type="password" autocomplete="off" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-red-400" placeholder="비밀번호">
+        <label id="deletePasswordLabel" data-i18n="password" for="deletePasswordInput" class="block text-xs font-medium text-slate-600 mb-1.5">비밀번호</label>
+        <input id="deletePasswordInput" data-i18n-placeholder="password" type="password" autocomplete="off" class="w-full border border-slate-200 bg-slate-50 rounded-2xl px-3 py-3 text-sm outline-none focus:border-red-400" placeholder="비밀번호">
       </div>
       <p id="deleteError" class="hidden text-xs text-red-600"></p>
-      <div class="flex gap-2"><button id="deleteCancelBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="deleteConfirmBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-full">삭제</button></div>
+      <div class="flex gap-2"><button id="deleteCancelBtn" data-i18n="cancel" class="flex-1 px-4 py-3 text-sm font-semibold bg-slate-100 text-slate-700 rounded-full">취소</button><button id="deleteConfirmBtn" data-i18n="deleteBtn" class="flex-1 px-4 py-3 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-full">삭제</button></div>
     </div>
   </div>
 
   <!-- 사용자 ID 수정 모달 -->
   <div id="userModal" role="dialog" aria-modal="true" aria-labelledby="uiModalTitle" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm floating-bar flex flex-col gap-4">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2"><h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-gear text-indigo-600"></i> <span id="uiModalTitle">사용자 ID 설정</span></h3><button id="closeModalBtn" class="text-slate-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
-      <div><label id="uiIdLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
-      <div class="flex justify-end gap-2"><button id="cancelModalBtn" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-full">취소</button><button id="saveUserBtn" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-full">저장하기</button></div>
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2"><h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-gear text-indigo-600"></i> <span id="uiModalTitle" data-i18n="changeId">사용자 ID 설정</span></h3><button id="closeModalBtn" data-i18n-aria="cancel" class="text-slate-400 text-lg"><i class="fa-solid fa-xmark"></i></button></div>
+      <div><label id="uiIdLabel" data-i18n="idLabel" for="newUserIdInput" class="text-xs text-slate-500 font-medium mb-1 block">새로 사용할 ID를 입력하세요</label><input type="text" id="newUserIdInput" data-i18n-placeholder="idPlaceholder" maxlength="40" autocomplete="off" placeholder="예: 홍길동, Alex..." class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-indigo-500"></div>
+      <div class="flex justify-end gap-2"><button id="cancelModalBtn" data-i18n="cancel" class="px-4 py-2 text-xs text-slate-600 font-medium bg-slate-100 rounded-full">취소</button><button id="saveUserBtn" data-i18n="save" class="px-4 py-2 text-xs text-white font-medium bg-indigo-600 rounded-full">저장하기</button></div>
     </div>
   </div>
 
@@ -299,19 +299,12 @@
   };
 
   const LANGS = {
-    ko: { title:'AI 번역 채팅방', subtitle:'채팅방을 선택하거나 새로 만들어 보세요.', create:'새 채팅방', list:'채팅방 목록', search:'채팅방 검색', loading:'채팅방을 불러오는 중...', noRooms:'아직 채팅방이 없습니다. 새 채팅방을 만들어 보세요.', roomName:'채팅방 이름', createTitle:'새 채팅방 만들기', usePassword:'비밀번호 사용', passwordHint:'필요한 경우 비밀번호를 설정하세요.', password:'비밀번호', make:'만들기', cancel:'취소', enter:'입장', enterTitle:'비밀번호 입력', enterDesc:'이 채팅방에 입장하려면 비밀번호를 입력하세요.', wrongPassword:'비밀번호가 올바르지 않습니다.', roomSettings:'채팅방 설정', passwordOn:'비밀번호 사용 중', passwordOff:'비밀번호 사용 안 함', chooseAction:'변경할 설정', enable:'비밀번호 켜기', disable:'비밀번호 끄기', change:'비밀번호 변경', currentPassword:'현재 비밀번호', newPassword:'새 비밀번호', save:'저장', needPassword:'비밀번호를 입력하세요.', roomCreated:'채팅방을 만들었습니다.', passwordUpdated:'비밀번호 설정을 변경했습니다.', needCurrent:'현재 비밀번호를 입력하세요.', wrongCurrent:'현재 비밀번호가 올바르지 않습니다.', roomNameRequired:'채팅방 이름을 입력하세요.', roomNameTooLong:'채팅방 이름은 40자 이하로 입력하세요.', passwordRequired:'새 비밀번호를 입력하세요.', roomListButton:'목록', noSearchResults:'검색 결과가 없습니다.', welcome:'채팅방에 연결되었습니다. 대화를 시작하세요!', changeId:'사용자 ID 설정', idLabel:'새로 사용할 ID를 입력하세요', idPlaceholder:'예: 홍길동, Alex...', mic:'음성 입력', send:'전송', inputPlaceholder:'메시지 입력', listening:'음성을 듣고 받아적는 중입니다...', translating:'AI 번역 중...', me:'나', source:'입력:', target:'번역:', failNotFound:'⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.', failLimit:'⚠️ 번역 실패: API 사용량 한도 초과.', failServer:'⚠️ 번역 실패: AI 서버가 혼잡합니다.', failTimeout:'⚠️ 번역 실패: AI 응답 시간 초과.', failConnection:'⚠️ 번역 실패: 서버 연결을 확인해 주세요.', failEmpty:'⚠️ 번역 실패: 번역 결과를 받지 못했습니다.', failDefault:'⚠️ 번역 실패: ', languageNames:['한국어','대만어 (繁體中文)','일본어 (日本語)','영어 (English)'], languageTitle:'화면 언어 선택' },
-    zh: { title:'AI 翻譯聊天室', subtitle:'選擇聊天室或建立新聊天室。', create:'新增聊天室', list:'聊天室列表', search:'搜尋聊天室', loading:'正在載入聊天室...', noRooms:'目前沒有聊天室，請建立一個。', roomName:'聊天室名稱', createTitle:'建立新聊天室', usePassword:'使用密碼', passwordHint:'可選擇為聊天室設定密碼。', password:'密碼', make:'建立', cancel:'取消', enter:'進入', enterTitle:'輸入密碼', enterDesc:'請輸入密碼以進入聊天室。', wrongPassword:'密碼錯誤。', roomSettings:'聊天室設定', passwordOn:'已啟用密碼', passwordOff:'未使用密碼', chooseAction:'選擇設定', enable:'啟用密碼', disable:'關閉密碼', change:'變更密碼', currentPassword:'目前密碼', newPassword:'新密碼', save:'儲存', needPassword:'請輸入密碼。', roomCreated:'聊天室已建立。', passwordUpdated:'密碼設定已更新。', needCurrent:'請輸入目前密碼。', wrongCurrent:'目前密碼錯誤。', roomNameRequired:'請輸入聊天室名稱。', roomNameTooLong:'聊天室名稱最多 40 個字元。', passwordRequired:'請輸入新密碼。', roomListButton:'列表', noSearchResults:'沒有搜尋結果。', welcome:'已連線至聊天室，開始聊天吧！', changeId:'使用者 ID 設定', idLabel:'請輸入要使用的 ID', idPlaceholder:'例如：小明、Alex...', mic:'語音輸入', send:'傳送', inputPlaceholder:'輸入訊息', listening:'正在辨識語音...', translating:'AI 翻譯中...', me:'我', source:'輸入：', target:'翻譯：', failNotFound:'⚠️ 翻譯失敗：找不到翻譯伺服器。', failLimit:'⚠️ 翻譯失敗：API 使用量已達上限。', failServer:'⚠️ 翻譯失敗：AI 伺服器繁忙。', failTimeout:'⚠️ 翻譯失敗：AI 回應逾時。', failConnection:'⚠️ 翻譯失敗：請檢查伺服器連線。', failEmpty:'⚠️ 翻譯失敗：未收到翻譯結果。', failDefault:'⚠️ 翻譯失敗：', languageNames:['韓語','台灣中文（繁體）','日語','英語'], languageTitle:'選擇介面語言' },
-    ja: { title:'AI翻訳チャットルーム', subtitle:'チャットルームを選択するか、新しく作成してください。', create:'新しい部屋', list:'チャットルーム一覧', search:'チャットルームを検索', loading:'チャットルームを読み込み中...', noRooms:'チャットルームがありません。新しく作成してください。', roomName:'チャットルーム名', createTitle:'新しいチャットルーム', usePassword:'パスワードを使用', passwordHint:'必要に応じてパスワードを設定できます。', password:'パスワード', make:'作成', cancel:'キャンセル', enter:'入室', enterTitle:'パスワードを入力', enterDesc:'入室するにはパスワードを入力してください。', wrongPassword:'パスワードが違います。', roomSettings:'ルーム設定', passwordOn:'パスワード設定あり', passwordOff:'パスワード設定なし', chooseAction:'設定を選択', enable:'パスワードを有効にする', disable:'パスワードを無効にする', change:'パスワードを変更', currentPassword:'現在のパスワード', newPassword:'新しいパスワード', save:'保存', needPassword:'パスワードを入力してください。', roomCreated:'チャットルームを作成しました。', passwordUpdated:'パスワード設定を更新しました。', needCurrent:'現在のパスワードを入力してください。', wrongCurrent:'現在のパスワードが違います。', roomNameRequired:'チャットルーム名を入力してください。', roomNameTooLong:'ルーム名は40文字以内で入力してください。', passwordRequired:'新しいパスワードを入力してください。', roomListButton:'一覧', noSearchResults:'検索結果がありません。', welcome:'チャットルームに接続しました。会話を始めましょう！', changeId:'ユーザーID設定', idLabel:'使用するIDを入力してください', idPlaceholder:'例：太郎、Alex...', mic:'音声入力', send:'送信', inputPlaceholder:'メッセージ入力', listening:'音声を認識しています...', translating:'AI翻訳中...', me:'自分', source:'入力：', target:'翻訳：', failNotFound:'⚠️ 翻訳失敗：翻訳サーバーが見つかりません。', failLimit:'⚠️ 翻訳失敗：API使用量制限を超えました。', failServer:'⚠️ 翻訳失敗：AIサーバーが混雑しています。', failTimeout:'⚠️ 翻訳失敗：AI応答がタイムアウトしました。', failConnection:'⚠️ 翻訳失敗：サーバー接続を確認してください。', failEmpty:'⚠️ 翻訳失敗：翻訳結果を取得できませんでした。', failDefault:'⚠️ 翻訳失敗：', languageNames:['韓国語','台湾中国語（繁体字）','日本語','英語'], languageTitle:'画面言語を選択' },
-    en: { title:'AI Translation Chat', subtitle:'Choose a chat room or create a new one.', create:'New room', list:'Chat rooms', search:'Search rooms', loading:'Loading chat rooms...', noRooms:'No chat rooms yet. Create one to get started.', roomName:'Room name', createTitle:'Create a chat room', usePassword:'Use a password', passwordHint:'Add a password if you want to restrict casual access.', password:'Password', make:'Create', cancel:'Cancel', enter:'Enter', enterTitle:'Enter password', enterDesc:'Enter the password to join this room.', wrongPassword:'Incorrect password.', roomSettings:'Room settings', passwordOn:'Password enabled', passwordOff:'No password', chooseAction:'Setting', enable:'Enable password', disable:'Disable password', change:'Change password', currentPassword:'Current password', newPassword:'New password', save:'Save', needPassword:'Please enter a password.', roomCreated:'Chat room created.', passwordUpdated:'Password settings updated.', needCurrent:'Please enter the current password.', wrongCurrent:'The current password is incorrect.', roomNameRequired:'Please enter a room name.', roomNameTooLong:'Room names must be 40 characters or fewer.', passwordRequired:'Please enter a new password.', roomListButton:'Rooms', noSearchResults:'No search results.', welcome:'Connected to the chat room. Start a conversation!', changeId:'User ID Settings', idLabel:'Enter the ID you want to use', idPlaceholder:'e.g. Alex, John...', mic:'Voice input', send:'Send', inputPlaceholder:'Type a message', listening:'Listening to your voice...', translating:'AI translating...', me:'Me', source:'Input:', target:'Translate:', failNotFound:'⚠️ Translation failed: Translation server not found.', failLimit:'⚠️ Translation failed: API usage limit exceeded.', failServer:'⚠️ Translation failed: AI server is busy.', failTimeout:'⚠️ Translation failed: AI response timed out.', failConnection:'⚠️ Translation failed: Please check your server connection.', failEmpty:'⚠️ Translation failed: No translation result received.', failDefault:'⚠️ Translation failed: ', languageNames:['Korean','Traditional Chinese (Taiwan)','Japanese','English'], languageTitle:'Select interface language' }
+    ko: { title:'AI 번역 채팅방', subtitle:'채팅방을 선택하거나 새로 만들어 보세요.', create:'새 채팅방', list:'채팅방 목록', search:'채팅방 검색', loading:'채팅방을 불러오는 중...', noRooms:'아직 채팅방이 없습니다. 새 채팅방을 만들어 보세요.', roomName:'채팅방 이름', createTitle:'새 채팅방 만들기', usePassword:'비밀번호 사용', passwordHint:'필요한 경우 비밀번호를 설정하세요.', password:'비밀번호', make:'만들기', cancel:'취소', enter:'입장', enterTitle:'비밀번호 입력', enterDesc:'이 채팅방에 입장하려면 비밀번호를 입력하세요.', wrongPassword:'비밀번호가 올바르지 않습니다.', roomSettings:'채팅방 설정', passwordOn:'비밀번호 사용 중', passwordOff:'비밀번호 사용 안 함', chooseAction:'변경할 설정', enable:'비밀번호 켜기', disable:'비밀번호 끄기', change:'비밀번호 변경', currentPassword:'현재 비밀번호', newPassword:'새 비밀번호', save:'저장', needPassword:'비밀번호를 입력하세요.', roomCreated:'채팅방을 만들었습니다.', passwordUpdated:'비밀번호 설정을 변경했습니다.', needCurrent:'현재 비밀번호를 입력하세요.', wrongCurrent:'현재 비밀번호가 올바르지 않습니다.', roomNameRequired:'채팅방 이름을 입력하세요.', roomNameTooLong:'채팅방 이름은 40자 이하로 입력하세요.', passwordRequired:'새 비밀번호를 입력하세요.', roomListButton:'목록', noSearchResults:'검색 결과가 없습니다.', welcome:'채팅방에 연결되었습니다. 대화를 시작하세요!', changeId:'사용자 ID 설정', idLabel:'새로 사용할 ID를 입력하세요', idPlaceholder:'예: 홍길동, Alex...', mic:'음성 입력', send:'전송', inputPlaceholder:'메시지 입력', listening:'음성을 듣고 받아적는 중입니다...', translating:'AI 번역 중...', me:'나', source:'입력:', target:'번역:', failNotFound:'⚠️ 번역 실패: 번역 서버를 찾을 수 없습니다.', failLimit:'⚠️ 번역 실패: API 사용량 한도 초과.', failServer:'⚠️ 번역 실패: AI 서버가 혼잡합니다.', failTimeout:'⚠️ 번역 실패: AI 응답 시간 초과.', failConnection:'⚠️ 번역 실패: 서버 연결을 확인해 주세요.', failEmpty:'⚠️ 번역 실패: 번역 결과를 받지 못했습니다.', failDefault:'⚠️ 번역 실패: ', languageNames:['한국어','대만어 (繁體中文)','일본어 (日本語)','영어 (English)'], languageTitle:'화면 언어 선택', edit:'수정', done:'완료', settings:'채팅방 설정', remove:'채팅방 삭제', deleteFail:'채팅방 삭제에 실패했습니다. Firebase 권한을 확인해 주세요.', deleteTitle:'채팅방 삭제', deleteDesc:'이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?', deleteBtn:'삭제', keepPw:'비밀번호 유지', keepSetting:'비밀번호 설정 유지', langName:'한국어', myIdShort:'내 ID', roomTag:'AI 번역', iconTitle:'아이콘 변경', iconLabel:'아이콘', colorLabel:'배경 색', defaultIcon:'기본 아이콘', resetColor:'기본 색', customColor:'직접 선택', iconSaveFail:'아이콘을 저장하지 못했습니다. Firebase 권한을 확인해 주세요.', roomLoadFail:'채팅방 정보를 불러오지 못했습니다. Firebase 연결과 보안 규칙을 확인해 주세요.', invalidLink:'올바르지 않은 채팅방 링크입니다.', roomNotFound:'존재하지 않는 방입니다.', renamed:'채팅방 이름을 변경했습니다.', saved:'채팅방 설정을 저장했습니다.', sendFail:'메시지를 전송하지 못했습니다. Firebase 연결을 확인해 주세요.', sentWithoutTranslation:'원문만 전송되었습니다.', loadMore:'이전 대화 더보기', loadMoreFail:'이전 대화를 불러오지 못했습니다.', retryTranslate:'다시 번역', copyTranslation:'번역문 복사', copied:'복사됨', noMessages:'아직 메시지가 없어요', lockedPreview:'비밀번호가 설정된 방이에요', yesterday:'어제', newMessage:'새 메시지', typingSuffix:' 입력 중', typingMany:'{n}명이 입력 중', roomNamePlaceholder:'예: 친구들과의 채팅' },
+    zh: { title:'AI 翻譯聊天室', subtitle:'選擇聊天室或建立新聊天室。', create:'新增聊天室', list:'聊天室列表', search:'搜尋聊天室', loading:'正在載入聊天室...', noRooms:'目前沒有聊天室，請建立一個。', roomName:'聊天室名稱', createTitle:'建立新聊天室', usePassword:'使用密碼', passwordHint:'可選擇為聊天室設定密碼。', password:'密碼', make:'建立', cancel:'取消', enter:'進入', enterTitle:'輸入密碼', enterDesc:'請輸入密碼以進入聊天室。', wrongPassword:'密碼錯誤。', roomSettings:'聊天室設定', passwordOn:'已啟用密碼', passwordOff:'未使用密碼', chooseAction:'選擇設定', enable:'啟用密碼', disable:'關閉密碼', change:'變更密碼', currentPassword:'目前密碼', newPassword:'新密碼', save:'儲存', needPassword:'請輸入密碼。', roomCreated:'聊天室已建立。', passwordUpdated:'密碼設定已更新。', needCurrent:'請輸入目前密碼。', wrongCurrent:'目前密碼錯誤。', roomNameRequired:'請輸入聊天室名稱。', roomNameTooLong:'聊天室名稱最多 40 個字元。', passwordRequired:'請輸入新密碼。', roomListButton:'列表', noSearchResults:'沒有搜尋結果。', welcome:'已連線至聊天室，開始聊天吧！', changeId:'使用者 ID 設定', idLabel:'請輸入要使用的 ID', idPlaceholder:'例如：小明、Alex...', mic:'語音輸入', send:'傳送', inputPlaceholder:'輸入訊息', listening:'正在辨識語音...', translating:'AI 翻譯中...', me:'我', source:'輸入：', target:'翻譯：', failNotFound:'⚠️ 翻譯失敗：找不到翻譯伺服器。', failLimit:'⚠️ 翻譯失敗：API 使用量已達上限。', failServer:'⚠️ 翻譯失敗：AI 伺服器繁忙。', failTimeout:'⚠️ 翻譯失敗：AI 回應逾時。', failConnection:'⚠️ 翻譯失敗：請檢查伺服器連線。', failEmpty:'⚠️ 翻譯失敗：未收到翻譯結果。', failDefault:'⚠️ 翻譯失敗：', languageNames:['韓語','台灣中文（繁體）','日語','英語'], languageTitle:'選擇介面語言', edit:'編輯', done:'完成', settings:'聊天室設定', remove:'刪除聊天室', deleteFail:'刪除聊天室失敗，請檢查 Firebase 權限。', deleteTitle:'刪除聊天室', deleteDesc:'此聊天室與所有對話紀錄將被刪除且無法復原。確定要刪除嗎？', deleteBtn:'刪除', keepPw:'維持密碼', keepSetting:'維持目前設定', langName:'繁體中文', myIdShort:'我的 ID', roomTag:'AI 翻譯', iconTitle:'更換圖示', iconLabel:'圖示', colorLabel:'背景顏色', defaultIcon:'預設圖示', resetColor:'預設顏色', customColor:'自訂顏色', iconSaveFail:'無法儲存圖示，請檢查 Firebase 權限。', roomLoadFail:'無法載入聊天室資訊，請檢查 Firebase 連線與安全規則。', invalidLink:'聊天室連結無效。', roomNotFound:'此聊天室不存在。', renamed:'聊天室名稱已變更。', saved:'聊天室設定已儲存。', sendFail:'訊息傳送失敗，請檢查 Firebase 連線。', sentWithoutTranslation:'已僅傳送原文。', loadMore:'載入更早的對話', loadMoreFail:'無法載入先前的對話。', retryTranslate:'重新翻譯', copyTranslation:'複製翻譯', copied:'已複製', noMessages:'還沒有訊息', lockedPreview:'此聊天室已設定密碼', yesterday:'昨天', newMessage:'新訊息', typingSuffix:' 正在輸入', typingMany:'{n} 人正在輸入', roomNamePlaceholder:'例如：朋友聊天' },
+    ja: { title:'AI翻訳チャットルーム', subtitle:'チャットルームを選択するか、新しく作成してください。', create:'新しい部屋', list:'チャットルーム一覧', search:'チャットルームを検索', loading:'チャットルームを読み込み中...', noRooms:'チャットルームがありません。新しく作成してください。', roomName:'チャットルーム名', createTitle:'新しいチャットルーム', usePassword:'パスワードを使用', passwordHint:'必要に応じてパスワードを設定できます。', password:'パスワード', make:'作成', cancel:'キャンセル', enter:'入室', enterTitle:'パスワードを入力', enterDesc:'入室するにはパスワードを入力してください。', wrongPassword:'パスワードが違います。', roomSettings:'ルーム設定', passwordOn:'パスワード設定あり', passwordOff:'パスワード設定なし', chooseAction:'設定を選択', enable:'パスワードを有効にする', disable:'パスワードを無効にする', change:'パスワードを変更', currentPassword:'現在のパスワード', newPassword:'新しいパスワード', save:'保存', needPassword:'パスワードを入力してください。', roomCreated:'チャットルームを作成しました。', passwordUpdated:'パスワード設定を更新しました。', needCurrent:'現在のパスワードを入力してください。', wrongCurrent:'現在のパスワードが違います。', roomNameRequired:'チャットルーム名を入力してください。', roomNameTooLong:'ルーム名は40文字以内で入力してください。', passwordRequired:'新しいパスワードを入力してください。', roomListButton:'一覧', noSearchResults:'検索結果がありません。', welcome:'チャットルームに接続しました。会話を始めましょう！', changeId:'ユーザーID設定', idLabel:'使用するIDを入力してください', idPlaceholder:'例：太郎、Alex...', mic:'音声入力', send:'送信', inputPlaceholder:'メッセージ入力', listening:'音声を認識しています...', translating:'AI翻訳中...', me:'自分', source:'入力：', target:'翻訳：', failNotFound:'⚠️ 翻訳失敗：翻訳サーバーが見つかりません。', failLimit:'⚠️ 翻訳失敗：API使用量制限を超えました。', failServer:'⚠️ 翻訳失敗：AIサーバーが混雑しています。', failTimeout:'⚠️ 翻訳失敗：AI応答がタイムアウトしました。', failConnection:'⚠️ 翻訳失敗：サーバー接続を確認してください。', failEmpty:'⚠️ 翻訳失敗：翻訳結果を取得できませんでした。', failDefault:'⚠️ 翻訳失敗：', languageNames:['韓国語','台湾中国語（繁体字）','日本語','英語'], languageTitle:'画面言語を選択', edit:'編集', done:'完了', settings:'ルーム設定', remove:'ルームを削除', deleteFail:'ルームの削除に失敗しました。Firebaseの権限を確認してください。', deleteTitle:'ルームを削除', deleteDesc:'このルームとすべての会話履歴が削除され、元に戻せません。本当に削除しますか？', deleteBtn:'削除', keepPw:'パスワードを維持', keepSetting:'現在の設定を維持', langName:'日本語', myIdShort:'自分のID', roomTag:'AI翻訳', iconTitle:'アイコンを変更', iconLabel:'アイコン', colorLabel:'背景色', defaultIcon:'デフォルト', resetColor:'デフォルト色', customColor:'色を選ぶ', iconSaveFail:'アイコンを保存できませんでした。Firebaseの権限を確認してください。', roomLoadFail:'ルーム情報を読み込めませんでした。Firebaseの接続とセキュリティルールを確認してください。', invalidLink:'ルームのリンクが正しくありません。', roomNotFound:'存在しないルームです。', renamed:'ルーム名を変更しました。', saved:'ルーム設定を保存しました。', sendFail:'メッセージを送信できませんでした。Firebaseの接続を確認してください。', sentWithoutTranslation:'原文のみ送信されました。', loadMore:'以前の会話を表示', loadMoreFail:'以前の会話を読み込めませんでした。', retryTranslate:'再翻訳', copyTranslation:'翻訳をコピー', copied:'コピーしました', noMessages:'まだメッセージがありません', lockedPreview:'パスワードが設定されたルームです', yesterday:'昨日', newMessage:'新着メッセージ', typingSuffix:'さんが入力中', typingMany:'{n}人が入力中', roomNamePlaceholder:'例：友達とのチャット' },
+    en: { title:'AI Translation Chat', subtitle:'Choose a chat room or create a new one.', create:'New room', list:'Chat rooms', search:'Search rooms', loading:'Loading chat rooms...', noRooms:'No chat rooms yet. Create one to get started.', roomName:'Room name', createTitle:'Create a chat room', usePassword:'Use a password', passwordHint:'Add a password if you want to restrict casual access.', password:'Password', make:'Create', cancel:'Cancel', enter:'Enter', enterTitle:'Enter password', enterDesc:'Enter the password to join this room.', wrongPassword:'Incorrect password.', roomSettings:'Room settings', passwordOn:'Password enabled', passwordOff:'No password', chooseAction:'Setting', enable:'Enable password', disable:'Disable password', change:'Change password', currentPassword:'Current password', newPassword:'New password', save:'Save', needPassword:'Please enter a password.', roomCreated:'Chat room created.', passwordUpdated:'Password settings updated.', needCurrent:'Please enter the current password.', wrongCurrent:'The current password is incorrect.', roomNameRequired:'Please enter a room name.', roomNameTooLong:'Room names must be 40 characters or fewer.', passwordRequired:'Please enter a new password.', roomListButton:'Rooms', noSearchResults:'No search results.', welcome:'Connected to the chat room. Start a conversation!', changeId:'User ID Settings', idLabel:'Enter the ID you want to use', idPlaceholder:'e.g. Alex, John...', mic:'Voice input', send:'Send', inputPlaceholder:'Type a message', listening:'Listening to your voice...', translating:'AI translating...', me:'Me', source:'Input:', target:'Translate:', failNotFound:'⚠️ Translation failed: Translation server not found.', failLimit:'⚠️ Translation failed: API usage limit exceeded.', failServer:'⚠️ Translation failed: AI server is busy.', failTimeout:'⚠️ Translation failed: AI response timed out.', failConnection:'⚠️ Translation failed: Please check your server connection.', failEmpty:'⚠️ Translation failed: No translation result received.', failDefault:'⚠️ Translation failed: ', languageNames:['Korean','Traditional Chinese (Taiwan)','Japanese','English'], languageTitle:'Select interface language', edit:'Edit', done:'Done', settings:'Room settings', remove:'Delete room', deleteFail:'Failed to delete the room. Please check Firebase permissions.', deleteTitle:'Delete room', deleteDesc:'This room and all its messages will be deleted and cannot be restored. Delete it?', deleteBtn:'Delete', keepPw:'Keep password', keepSetting:'Keep current setting', langName:'English', myIdShort:'My ID', roomTag:'AI Translate', iconTitle:'Change icon', iconLabel:'Icon', colorLabel:'Background color', defaultIcon:'Default icon', resetColor:'Default color', customColor:'Pick a color', iconSaveFail:'Could not save the icon. Please check Firebase permissions.', roomLoadFail:'Could not load the room. Please check your Firebase connection and rules.', invalidLink:'Invalid room link.', roomNotFound:'This room does not exist.', renamed:'Room name updated.', saved:'Room settings saved.', sendFail:'Could not send the message. Please check your Firebase connection.', sentWithoutTranslation:'Sent without translation.', loadMore:'Load earlier messages', loadMoreFail:'Could not load earlier messages.', retryTranslate:'Retry translation', copyTranslation:'Copy translation', copied:'Copied', noMessages:'No messages yet', lockedPreview:'Password-protected room', yesterday:'Yesterday', newMessage:'New message', typingSuffix:' is typing', typingMany:'{n} people are typing', roomNamePlaceholder:'e.g. Chat with friends' }
   };
 
-  // 화면 언어별 추가 문구 (목록 수정 모드, 삭제 창, 알림창 등)
-  const EDIT_LABELS = {
-    ko: { edit:'수정', done:'완료', settings:'채팅방 설정', remove:'채팅방 삭제', deleteFail:'채팅방 삭제에 실패했습니다. Firebase 권한을 확인해 주세요.', deleteTitle:'채팅방 삭제', deleteDesc:'이 채팅방과 모든 대화 기록이 삭제되며 되돌릴 수 없습니다. 정말 삭제할까요?', deleteBtn:'삭제', keepPw:'비밀번호 유지', keepSetting:'비밀번호 설정 유지', langName:'한국어', myIdShort:'내 ID', roomTag:'AI 번역', iconTitle:'아이콘 변경', iconLabel:'아이콘', colorLabel:'배경 색', defaultIcon:'기본 아이콘', resetColor:'기본 색', customColor:'직접 선택', iconSaveFail:'아이콘을 저장하지 못했습니다. Firebase 권한을 확인해 주세요.', roomLoadFail:'채팅방 정보를 불러오지 못했습니다. Firebase 연결과 보안 규칙을 확인해 주세요.', invalidLink:'올바르지 않은 채팅방 링크입니다.', roomNotFound:'존재하지 않는 방입니다.', renamed:'채팅방 이름을 변경했습니다.', saved:'채팅방 설정을 저장했습니다.', sendFail:'메시지를 전송하지 못했습니다. Firebase 연결을 확인해 주세요.', sentWithoutTranslation:'원문만 전송되었습니다.', loadMore:'이전 대화 더보기', loadMoreFail:'이전 대화를 불러오지 못했습니다.', retryTranslate:'다시 번역', copyTranslation:'번역문 복사', copied:'복사됨', noMessages:'아직 메시지가 없어요', lockedPreview:'비밀번호가 설정된 방이에요', yesterday:'어제', newMessage:'새 메시지', typingSuffix:' 입력 중', typingMany:'{n}명이 입력 중' },
-    zh: { edit:'編輯', done:'完成', settings:'聊天室設定', remove:'刪除聊天室', deleteFail:'刪除聊天室失敗，請檢查 Firebase 權限。', deleteTitle:'刪除聊天室', deleteDesc:'此聊天室與所有對話紀錄將被刪除且無法復原。確定要刪除嗎？', deleteBtn:'刪除', keepPw:'維持密碼', keepSetting:'維持目前設定', langName:'繁體中文', myIdShort:'我的 ID', roomTag:'AI 翻譯', iconTitle:'更換圖示', iconLabel:'圖示', colorLabel:'背景顏色', defaultIcon:'預設圖示', resetColor:'預設顏色', customColor:'自訂顏色', iconSaveFail:'無法儲存圖示，請檢查 Firebase 權限。', roomLoadFail:'無法載入聊天室資訊，請檢查 Firebase 連線與安全規則。', invalidLink:'聊天室連結無效。', roomNotFound:'此聊天室不存在。', renamed:'聊天室名稱已變更。', saved:'聊天室設定已儲存。', sendFail:'訊息傳送失敗，請檢查 Firebase 連線。', sentWithoutTranslation:'已僅傳送原文。', loadMore:'載入更早的對話', loadMoreFail:'無法載入先前的對話。', retryTranslate:'重新翻譯', copyTranslation:'複製翻譯', copied:'已複製', noMessages:'還沒有訊息', lockedPreview:'此聊天室已設定密碼', yesterday:'昨天', newMessage:'新訊息', typingSuffix:' 正在輸入', typingMany:'{n} 人正在輸入' },
-    ja: { edit:'編集', done:'完了', settings:'ルーム設定', remove:'ルームを削除', deleteFail:'ルームの削除に失敗しました。Firebaseの権限を確認してください。', deleteTitle:'ルームを削除', deleteDesc:'このルームとすべての会話履歴が削除され、元に戻せません。本当に削除しますか？', deleteBtn:'削除', keepPw:'パスワードを維持', keepSetting:'現在の設定を維持', langName:'日本語', myIdShort:'自分のID', roomTag:'AI翻訳', iconTitle:'アイコンを変更', iconLabel:'アイコン', colorLabel:'背景色', defaultIcon:'デフォルト', resetColor:'デフォルト色', customColor:'色を選ぶ', iconSaveFail:'アイコンを保存できませんでした。Firebaseの権限を確認してください。', roomLoadFail:'ルーム情報を読み込めませんでした。Firebaseの接続とセキュリティルールを確認してください。', invalidLink:'ルームのリンクが正しくありません。', roomNotFound:'存在しないルームです。', renamed:'ルーム名を変更しました。', saved:'ルーム設定を保存しました。', sendFail:'メッセージを送信できませんでした。Firebaseの接続を確認してください。', sentWithoutTranslation:'原文のみ送信されました。', loadMore:'以前の会話を表示', loadMoreFail:'以前の会話を読み込めませんでした。', retryTranslate:'再翻訳', copyTranslation:'翻訳をコピー', copied:'コピーしました', noMessages:'まだメッセージがありません', lockedPreview:'パスワードが設定されたルームです', yesterday:'昨日', newMessage:'新着メッセージ', typingSuffix:'さんが入力中', typingMany:'{n}人が入力中' },
-    en: { edit:'Edit', done:'Done', settings:'Room settings', remove:'Delete room', deleteFail:'Failed to delete the room. Please check Firebase permissions.', deleteTitle:'Delete room', deleteDesc:'This room and all its messages will be deleted and cannot be restored. Delete it?', deleteBtn:'Delete', keepPw:'Keep password', keepSetting:'Keep current setting', langName:'English', myIdShort:'My ID', roomTag:'AI Translate', iconTitle:'Change icon', iconLabel:'Icon', colorLabel:'Background color', defaultIcon:'Default icon', resetColor:'Default color', customColor:'Pick a color', iconSaveFail:'Could not save the icon. Please check Firebase permissions.', roomLoadFail:'Could not load the room. Please check your Firebase connection and rules.', invalidLink:'Invalid room link.', roomNotFound:'This room does not exist.', renamed:'Room name updated.', saved:'Room settings saved.', sendFail:'Could not send the message. Please check your Firebase connection.', sentWithoutTranslation:'Sent without translation.', loadMore:'Load earlier messages', loadMoreFail:'Could not load earlier messages.', retryTranslate:'Retry translation', copyTranslation:'Copy translation', copied:'Copied', noMessages:'No messages yet', lockedPreview:'Password-protected room', yesterday:'Yesterday', newMessage:'New message', typingSuffix:' is typing', typingMany:'{n} people are typing' }
-  };
   let listEditMode = false;
   let settingsTarget = null; // 설정 모달이 가리키는 방 (채팅 중인 방 또는 목록에서 고른 방)
 
@@ -334,7 +327,6 @@
 
   const langMap = { ko:'Korean', zh:'Traditional Chinese (Taiwan, 繁體中文)', ja:'Japanese', en:'English' };
   const t = () => LANGS[uiLang] || LANGS.ko;
-  const xt = () => EDIT_LABELS[uiLang] || EDIT_LABELS.ko;
   let lastDateKey = '';   // 마지막으로 그린 메시지의 날짜 (날짜 구분선용)
   let deleteTarget = null; // 삭제 확인 창이 가리키는 방
   let statusTimer = null;
@@ -373,30 +365,32 @@
     return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // 고정 문구는 HTML의 data-i18n(글자), data-i18n-placeholder, data-i18n-title, data-i18n-aria 속성에 사전 키를 적어 두고 여기서 한 번에 바꾼다.
+  const I18N_ATTRS = [['i18n', (el, v) => { el.textContent = v; }], ['i18nPlaceholder', (el, v) => { el.placeholder = v; }], ['i18nTitle', (el, v) => { el.title = v; }], ['i18nAria', (el, v) => el.setAttribute('aria-label', v)]];
+  function applyI18n(root = document) {
+    const tx = t();
+    I18N_ATTRS.forEach(([name, apply]) => {
+      const attr = 'data-' + name.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+      root.querySelectorAll('[' + attr + ']').forEach(el => { const value = tx[el.dataset[name]]; if (value != null) apply(el, value); });
+    });
+  }
   function setUILanguage(lang) {
     uiLang = LANGS[lang] ? lang : 'ko';
     try { sessionStorage.setItem('chatUiLanguage', uiLang); } catch (error) {}
     document.documentElement.lang = ({ko:'ko',zh:'zh-TW',ja:'ja',en:'en'})[uiLang];
-    const x0 = xt(), t0 = t();
-    setText('uiLanguageName', ({ko:'한',zh:'中',ja:'日',en:'EN'})[uiLang]); setText('lobbyLanguageName', x0.langName);
-    setText('lobbyLanguagePopupTitle', t0.languageTitle);
-    setText('iconModalTitle', x0.iconTitle); setText('iconGridLabel', x0.iconLabel); setText('colorGridLabel', x0.colorLabel); setText('iconCancelBtn', t0.cancel); setText('iconSaveBtn', t0.save);
-    document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
     const tx = t();
-    setText('lobbyTitle', tx.title); setText('lobbySubtitle', tx.subtitle); setText('createRoomButtonText', tx.create); setText('roomListHeading', tx.list); setText('roomLoadingText', tx.loading); setText('uiTitle', xt().roomTag); setText('uiMyIdLabel', xt().myIdShort); setText('lobbyMyIdLabel', xt().myIdShort); setText('uiSourceLabel', tx.source); setText('uiTargetLabel', tx.target); setText('uiWelcome', tx.welcome); setText('roomListButtonText', tx.roomListButton); setText('uiLanguagePopupTitle', tx.languageTitle); setText('createModalTitle', tx.createTitle); setText('roomNameLabel', tx.roomName); setText('createPasswordLabel', tx.usePassword); setText('createPasswordHint', tx.passwordHint); setText('newRoomPasswordLabel', tx.password); setText('createRoomSubmitBtn', tx.make); setText('createRoomCancelBtn', tx.cancel); setText('entryModalTitle', tx.enterTitle); setText('entryModalDesc', tx.enterDesc); setText('entryConfirmBtn', tx.enter); setText('entryCancelBtn', tx.cancel); setText('settingsModalTitle', tx.roomSettings); setText('passwordActionLabel', tx.chooseAction); setText('currentPasswordLabel', tx.currentPassword); setText('settingsNewPasswordLabel', tx.newPassword); setText('settingsSaveBtn', tx.save); setText('settingsCancelBtn', tx.cancel); setText('uiIdLabel', tx.idLabel); setText('cancelModalBtn', tx.cancel); setText('saveUserBtn', tx.save); setText('uiModalTitle', tx.changeId);
-    els.roomSearchInput.placeholder = tx.search; els.entryPasswordInput.placeholder = tx.password; $('newRoomPasswordInput').placeholder = tx.password; $('currentPasswordInput').placeholder = tx.currentPassword; $('settingsNewPasswordInput').placeholder = tx.newPassword; $('newUserIdInput').placeholder = tx.idPlaceholder; els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder; els.micBtn.title = tx.mic; els.sendBtn.title = tx.send; $('changeUserBtn').title = tx.changeId; $('roomSettingsBtn').title = tx.roomSettings;
-    // 아이콘만 있거나 라벨이 없는 컨트롤에 스크린리더용 이름을 붙인다.
-    [['roomSettingsBtn', tx.roomSettings], ['micBtn', tx.mic], ['sendBtn', tx.send], ['createModalCloseBtn', tx.cancel], ['settingsModalCloseBtn', tx.cancel], ['iconModalCloseBtn', tx.cancel], ['closeModalBtn', tx.cancel], ['roomSearchInput', tx.search], ['textInput', tx.inputPlaceholder], ['sourceLangSelect', tx.source], ['targetLangSelect', tx.target], ['uiLanguageButton', tx.languageTitle + ': ' + x0.langName], ['lobbyLanguageButton', tx.languageTitle + ': ' + x0.langName]].forEach(([id, label]) => $(id).setAttribute('aria-label', label));
-    setText('deleteModalTitle', xt().deleteTitle); setText('deleteModalDesc', xt().deleteDesc); setText('deleteConfirmBtn', xt().deleteBtn); setText('deleteCancelBtn', tx.cancel); setText('deletePasswordLabel', tx.password); $('deletePasswordInput').placeholder = tx.password;
-    const selects = [els.sourceLangSelect, els.targetLangSelect];
-    selects.forEach(select => Array.from(select.options).forEach(option => { const idx = ({ko:0,zh:1,ja:2,en:3})[option.value]; option.textContent = tx.languageNames[idx]; }));
-    setText('loadMoreText', xt().loadMore);
-    document.querySelectorAll('.retry-translate-btn span').forEach(node => { node.textContent = xt().retryTranslate; });
-    document.querySelectorAll('.copy-translation-btn').forEach(node => { node.title = xt().copyTranslation; node.setAttribute('aria-label', xt().copyTranslation); });
+    applyI18n();
+    // 속성 하나로 표현할 수 없는 문구
+    setText('uiLanguageName', ({ko:'한',zh:'中',ja:'日',en:'EN'})[uiLang]);
+    ['uiLanguageButton', 'lobbyLanguageButton'].forEach(id => $(id).setAttribute('aria-label', tx.languageTitle + ': ' + tx.langName));
+    els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder;
+    document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
+    [els.sourceLangSelect, els.targetLangSelect].forEach(select => Array.from(select.options).forEach(option => { option.textContent = tx.languageNames[({ko:0,zh:1,ja:2,en:3})[option.value]]; }));
     if (messagesListener) refreshMessageTimes();
     renderTyping();
     renderRoomList();
   }
+
 
   // 모달을 열면 포커스를 모달 안으로 옮기고, 닫으면 열기 전에 누른 버튼으로 돌려준다.
   const modalOpeners = new Map();
@@ -495,7 +489,7 @@
     const s = timeSettings(), now = Date.now();
     const key = dateKeyOf(timestamp, s), today = dateKeyOf(now, s), yesterday = dateKeyOf(now - 86400000, s);
     if (key === today) return formatMessageTime(timestamp);
-    if (key === yesterday) return xt().yesterday;
+    if (key === yesterday) return t().yesterday;
     const sameYear = key.slice(0, 4) === today.slice(0, 4);
     return new Date(timestamp).toLocaleDateString(s.locale, sameYear ? { timeZone: s.zone, month: 'long', day: 'numeric' } : { timeZone: s.zone, year: 'numeric', month: 'numeric', day: 'numeric' });
   }
@@ -512,7 +506,7 @@
   function renderRoomList() {
     if (!els.roomList || els.lobbyScreen.classList.contains('hidden')) return; // 목록이 안 보일 때는 그리지 않는다. (돌아올 때 다시 그림)
     const tx = t();
-    const labels = EDIT_LABELS[uiLang] || EDIT_LABELS.ko;
+    const labels = t();
     setText('roomEditToggleText', listEditMode ? labels.done : labels.edit);
     $('roomEditToggleIcon').className = 'fa-solid ' + (listEditMode ? 'fa-check' : 'fa-pen') + ' mr-1';
     const query = (els.roomSearchInput.value || '').trim().toLocaleLowerCase();
@@ -530,7 +524,7 @@
       const locked = !!room.password;
       const roomName = safeHtml(room.name || room.id);
       const id = safeHtml(room.id);
-      const el = xt();
+      const el = t();
       const summary = roomSummaries[room.id];
       const unread = summary ? (summary.unread || 0) : 0;
       // 비밀번호가 있는 방은 마지막 메시지를 보여주지 않는다.
@@ -646,7 +640,7 @@
     document.title = baseTitle;
     activeRoomRef = db.log(activeRoomId);
     initialBuffer = document.createDocumentFragment();
-    els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 soft-card hover:text-indigo-700 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText">${safeHtml(xt().loadMore)}</span></button></div>`;
+    els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" data-i18n="welcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 soft-card hover:text-indigo-700 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText" data-i18n="loadMore">${safeHtml(t().loadMore)}</span></button></div>`;
     lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
     oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
     if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); }
@@ -690,7 +684,7 @@
     }
     // Firebase keys cannot contain these characters. Existing room IDs normally do not contain them.
     if (/[.#$\[\]\/]/.test(roomId)) {
-      showToast(xt().invalidLink);
+      showToast(t().invalidLink);
       leaveToLobby();
       return;
     }
@@ -709,7 +703,7 @@
         const snapshot = await directoryRef.child(roomId).once('value');
         if (!snapshot.exists()) {
           // 없는 방 주소로 들어오면 방을 만들지 않고 목록으로 돌려보낸다.
-          showToast(xt().roomNotFound);
+          showToast(t().roomNotFound);
           leaveToLobby();
           return;
         }
@@ -725,7 +719,7 @@
       els.chatApp.classList.add('hidden');
       showEntryPrompt(meta);
     } catch (error) {
-      showToast(xt().roomLoadFail);
+      showToast(t().roomLoadFail);
       console.error(error);
       leaveToLobby();
     }
@@ -795,8 +789,8 @@
     setText('settingsPasswordStatus', settingsTarget.password ? t().passwordOn : t().passwordOff);
     const select = $('passwordActionSelect');
     select.innerHTML = settingsTarget.password
-      ? `<option value="keep">${safeHtml(xt().keepPw)}</option><option value="disable">${safeHtml(t().disable)}</option><option value="change">${safeHtml(t().change)}</option>`
-      : `<option value="keep">${safeHtml(xt().keepSetting)}</option><option value="enable">${safeHtml(t().enable)}</option>`;
+      ? `<option value="keep">${safeHtml(t().keepPw)}</option><option value="disable">${safeHtml(t().disable)}</option><option value="change">${safeHtml(t().change)}</option>`
+      : `<option value="keep">${safeHtml(t().keepSetting)}</option><option value="enable">${safeHtml(t().enable)}</option>`;
     $('currentPasswordInput').value = ''; $('settingsNewPasswordInput').value = ''; clearError('settingsError'); updatePasswordSettingsFields(); openModal(els.roomSettingsModal);
   }
   $('roomSettingsBtn').addEventListener('click', () => openRoomSettings(activeRoomMeta));
@@ -839,7 +833,7 @@
       }
       setText('settingsPasswordStatus', nextPassword ? t().passwordOn : t().passwordOff);
       closeModal(els.roomSettingsModal);
-      showToast(nameChanged && !passwordActionNeeded ? xt().renamed : xt().saved);
+      showToast(nameChanged && !passwordActionNeeded ? t().renamed : t().saved);
     } catch (error) {
       showError('settingsError', error.message || 'Error');
     } finally { btn.disabled = false; }
@@ -875,12 +869,12 @@
     if (iconPickerBuilt) return;
     iconPickerBuilt = true;
     const iconGrid = $('iconGrid');
-    iconGrid.innerHTML = '<button type="button" class="icon-choice h-10 rounded-lg flex items-center justify-center text-indigo-600 hover:bg-slate-100" data-icon="" title="' + safeHtml(xt().defaultIcon) + '"><i class="fa-solid fa-comments"></i></button>'
+    iconGrid.innerHTML = '<button type="button" class="icon-choice h-10 rounded-lg flex items-center justify-center text-indigo-600 hover:bg-slate-100" data-icon="" title="' + safeHtml(t().defaultIcon) + '"><i class="fa-solid fa-comments"></i></button>'
       + ICON_CHOICES.map(icon => '<button type="button" class="icon-choice h-10 rounded-lg flex items-center justify-center text-xl hover:bg-slate-100" data-icon="' + safeHtml(icon) + '">' + safeHtml(icon) + '</button>').join('');
     const colorGrid = $('colorGrid');
-    colorGrid.innerHTML = '<button type="button" class="color-choice w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-500 text-[11px] flex items-center justify-center" data-color="" title="' + safeHtml(xt().resetColor) + '"><i class="fa-solid fa-rotate-left"></i></button>'
+    colorGrid.innerHTML = '<button type="button" class="color-choice w-7 h-7 rounded-full border border-slate-300 bg-white text-slate-500 text-[11px] flex items-center justify-center" data-color="" title="' + safeHtml(t().resetColor) + '"><i class="fa-solid fa-rotate-left"></i></button>'
       + COLOR_CHOICES.map(color => '<button type="button" class="color-choice w-7 h-7 rounded-full border border-slate-300" data-color="' + color + '" style="background:' + color + '"></button>').join('')
-      + '<label class="relative w-7 h-7 rounded-full overflow-hidden border border-slate-300 cursor-pointer" title="' + safeHtml(xt().customColor) + '" style="background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)"><input id="customColorInput" type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></label>';
+      + '<label class="relative w-7 h-7 rounded-full overflow-hidden border border-slate-300 cursor-pointer" title="' + safeHtml(t().customColor) + '" style="background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)"><input id="customColorInput" type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></label>';
     iconGrid.addEventListener('click', event => {
       const btn = event.target.closest('.icon-choice'); if (!btn) return;
       pickedIcon = btn.dataset.icon || null; applyIconPreview();
@@ -919,7 +913,7 @@
       await directoryRef.child(iconTarget.id).update({ icon: pickedIcon || null, color: pickedColor || null });
       closeIconPicker();
     } catch (error) {
-      console.error(error); showToast(xt().iconSaveFail);
+      console.error(error); showToast(t().iconSaveFail);
     } finally { btn.disabled = false; }
   });
 
@@ -957,7 +951,7 @@
       closeDeleteModal();
     } catch (error) {
       console.error(error);
-      showError('deleteError', xt().deleteFail);
+      showError('deleteError', t().deleteFail);
     } finally { btn.disabled = false; }
   });
   $('roomEditToggleBtn').addEventListener('click', () => { listEditMode = !listEditMode; renderRoomList(); });
@@ -1087,14 +1081,14 @@
     translatingKeys.delete(key);
     streamingText.delete(key);
     try { await savePromise; }
-    catch (error) { console.error('Could not send message:', error); showToast(xt().sendFail); return; }
+    catch (error) { console.error('Could not send message:', error); showToast(t().sendFail); return; }
     if (result.ok) {
       try { await msgRef.update({ translatedText: result.text }); }
       catch (error) { console.error('Could not save translation:', error); updateMessageElement(key, data); }
     } else {
       // 번역에 실패하면 원문만 남기고 '다시 번역' 버튼을 보여 준다.
       updateMessageElement(key, data);
-      showStatus(result.reason + ' ' + xt().sentWithoutTranslation);
+      showStatus(result.reason + ' ' + t().sentWithoutTranslation);
       clearTimeout(statusTimer); statusTimer = setTimeout(hideStatus, 5000);
     }
   }
@@ -1176,7 +1170,7 @@
     });
     // 새 이벤트가 오지 않아도 가장 먼저 만료되는 항목 시각에 다시 그린다.
     if (nextExpiry !== Infinity) typingRenderTimer = setTimeout(renderTyping, nextExpiry + 50);
-    const box = $('typingIndicator'), chat = els.chatContainer, x = xt();
+    const box = $('typingIndicator'), chat = els.chatContainer, x = t();
     // 화면 낭독기가 같은 문구를 반복해 읽지 않도록 바뀔 때만 고친다.
     const put = (id, value) => { const el = $(id); if (el.textContent !== value) el.textContent = value; };
     if (names.length) {
@@ -1196,10 +1190,10 @@
   }
 
   function fillBubble(bubble, data, isMine, key) {
-    const x = xt();
+    const x = t();
     let html = `<div class="text-xs md:text-sm ${isMine ? 'text-indigo-200' : 'text-slate-600'} font-normal break-words whitespace-pre-wrap leading-relaxed">${safeHtml(data.text || '')}</div>`;
     if (data.translatedText) {
-      html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1 whitespace-pre-wrap">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
+      html += `<div class="mt-1 pt-1 border-t ${isMine ? 'border-indigo-500/50 text-white' : 'border-slate-200/80 text-indigo-700'} text-base md:text-lg font-normal break-words leading-snug flex items-start gap-1.5"><i class="fa-solid fa-language text-xs opacity-75 mt-1 shrink-0"></i><span class="translated-text min-w-0 flex-1 whitespace-pre-wrap">${safeHtml(data.translatedText)}</span><button type="button" class="copy-translation-btn relative shrink-0 w-7 h-7 -mr-2 rounded-lg flex items-center justify-center text-xs transition ${isMine ? 'text-indigo-200 hover:text-white hover:bg-white/15' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}" data-i18n-title="copyTranslation" data-i18n-aria="copyTranslation" title="${safeHtml(x.copyTranslation)}" aria-label="${safeHtml(x.copyTranslation)}"><i class="fa-regular fa-copy"></i></button></div>`;
     } else if (isMine && key && translatingKeys.has(key)) {
       // 방금 보낸 메시지는 번역이 끝날 때까지 '번역 중'을 보여 주고, 도착한 번역은 먼저 채워 넣는다.
       if (streamingText.get(key)) {
@@ -1209,7 +1203,7 @@
       }
     } else if (isMine) {
       // 내 메시지인데 번역이 없으면(번역 실패) 다시 번역할 수 있다.
-      html += `<div class="mt-1.5"><button type="button" class="retry-translate-btn inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition"><i class="fa-solid fa-rotate-right text-[10px]"></i><span>${safeHtml(x.retryTranslate)}</span></button></div>`;
+      html += `<div class="mt-1.5"><button type="button" class="retry-translate-btn inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition"><i class="fa-solid fa-rotate-right text-[10px]"></i><span data-i18n="retryTranslate">${safeHtml(x.retryTranslate)}</span></button></div>`;
     }
     bubble.innerHTML = html;
   }
@@ -1291,7 +1285,7 @@
       refreshMessageTimes();
       box.scrollTop = prevTop + (box.scrollHeight - prevHeight); // 보던 위치 유지
     } catch (error) {
-      console.error('Load older failed:', error); showToast(xt().loadMoreFail);
+      console.error('Load older failed:', error); showToast(t().loadMoreFail);
     } finally { loadingMore = false; updateLoadMoreButton(); }
   }
 
@@ -1301,7 +1295,7 @@
   }
   function updateChatTitle() {
     const name = activeRoomMeta ? (activeRoomMeta.name || activeRoomMeta.id) : '';
-    document.title = hiddenUnread > 0 ? '(' + (hiddenUnread > 99 ? '99+' : hiddenUnread) + ') ' + xt().newMessage + (name ? ' · ' + name : '') : baseTitle;
+    document.title = hiddenUnread > 0 ? '(' + (hiddenUnread > 99 ? '99+' : hiddenUnread) + ') ' + t().newMessage + (name ? ' · ' + name : '') : baseTitle;
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible' || !activeRoomId) return;
@@ -1331,7 +1325,7 @@
       toast.className = 'copy-toast absolute right-0 -top-8 px-2 py-1 rounded-md bg-slate-800 text-white text-[11px] font-medium whitespace-nowrap shadow-lg pointer-events-none';
       btn.appendChild(toast);
     }
-    toast.textContent = xt().copied;
+    toast.textContent = t().copied;
     btn._copyTimer = setTimeout(() => { if (icon) icon.className = 'fa-regular fa-copy'; if (toast) toast.remove(); }, 1400);
   }
   async function retryTranslation(btn) {
@@ -1351,7 +1345,7 @@
       await activeRoomRef.child(key).update({ translatedText: result.text });
       updateMessageElement(key, Object.assign({}, data, { translatedText: result.text }));
     } catch (error) {
-      console.error('Retry save failed:', error); showToast(xt().sendFail);
+      console.error('Retry save failed:', error); showToast(t().sendFail);
       btn.disabled = false; if (icon) icon.classList.remove('fa-spin');
     }
   }
