@@ -311,15 +311,11 @@
   // 화면 언어는 탭(창)마다 따로 기억한다. 새 탭은 마지막으로 직접 고른 언어로 시작한다.
   let uiLang = (() => { try { return sessionStorage.getItem('chatUiLanguage') || localStorage.getItem('chatUiLanguage') || 'ko'; } catch (error) { return 'ko'; } })();
   if (!LANGS[uiLang]) uiLang = 'ko';
-  let activeRoomId = null;
-  let activeRoomMeta = null;
-  let activeRoomRef = null;
-  let messagesListener = null;
+  let room = null;                    // 지금 들어가 있는 방 세션 (목록 화면이면 null)
   let allRooms = {};
   let directoryLive = false;          // true면 allRooms가 서버에서 받은 최신 데이터 (캐시 아님)
   const translatingKeys = new Set();  // 지금 번역 중인 내 메시지 key
   const streamingText = new Map();    // 번역 중인 메시지 key -> 지금까지 도착한 번역
-  let initialBuffer = null;           // 방 입장 시 처음 불러온 메시지를 모았다가 한 번에 붙이는 임시 공간
   let pendingEntryMeta = null;
   let isRecording = false;
   let isManualStop = false;
@@ -327,16 +323,10 @@
 
   const langMap = { ko:'Korean', zh:'Traditional Chinese (Taiwan, 繁體中文)', ja:'Japanese', en:'English' };
   const t = () => LANGS[uiLang] || LANGS.ko;
-  let lastDateKey = '';   // 마지막으로 그린 메시지의 날짜 (날짜 구분선용)
   let deleteTarget = null; // 삭제 확인 창이 가리키는 방
   let statusTimer = null;
   const PAGE_SIZE = 30;              // 한 번에 불러오는 대화 수
   const baseTitle = document.title;
-  let messagesQuery = null, changedListener = null;
-  let oldestKey = null, newestKey = null, hasMoreMessages = false, loadingMore = false;
-  let renderedKeys = new Set();
-  const messageStore = new Map();     // 메시지 key -> 데이터 (다시 번역할 때 사용)
-  let historyReady = false, hiddenUnread = 0;
   const roomSummaries = {};           // 목록용: 방 id -> 마지막 메시지·안 읽은 개수
   const roomWatchers = {};
   let listRenderTimer = null;
@@ -386,7 +376,7 @@
     els.textInput.placeholder = isRecording ? tx.listening : tx.inputPlaceholder;
     document.querySelectorAll('.ui-language-option').forEach(btn => btn.classList.toggle('lang-active', btn.dataset.uiLang === uiLang));
     [els.sourceLangSelect, els.targetLangSelect].forEach(select => Array.from(select.options).forEach(option => { option.textContent = tx.languageNames[({ko:0,zh:1,ja:2,en:3})[option.value]]; }));
-    if (messagesListener) refreshMessageTimes();
+    if (room) refreshMessageTimes();
     renderTyping();
     renderRoomList();
   }
@@ -444,7 +434,7 @@
     listRenderTimer = setTimeout(() => { renderRoomList(); updateLobbyTitle(); saveRoomListCache(); }, 30);
   }
   function updateLobbyTitle() {
-    if (activeRoomId) return;
+    if (room) return;
     const total = Object.keys(allRooms).reduce((sum, id) => sum + ((roomSummaries[id] && roomSummaries[id].unread) || 0), 0);
     document.title = total > 0 ? '(' + (total > 99 ? '99+' : total) + ') ' + baseTitle : baseTitle;
   }
@@ -593,7 +583,7 @@
   }
 
   // 페이지를 새로 불러오지 않고 화면만 바꾼다. (Firebase 연결·목록 데이터를 그대로 재사용)
-  let lobbyLoaded = false, enterSeq = 0;
+  let lobbyLoaded = false;
   function navigateToRoom(id) {
     // 이미 방에 들어가는 중이면 추가로 누른 것은 무시한다. (누를 때마다 뒤로가기 기록이 쌓이는 것을 막음)
     if (new URLSearchParams(window.location.search).get('room')) return;
@@ -607,14 +597,42 @@
     routeIntoRequestedRoom();
   }
   window.addEventListener('popstate', () => routeIntoRequestedRoom());
+  // ---- 방 세션 ----
+  // 방 하나에 들어가 있는 동안의 상태(불러온 메시지, 이전 대화 페이지, 읽음, 입력 중)와 구독을 세션 객체 하나에 둔다.
+  // 구독·타이머·서버에 남긴 표시는 만들 때 정리 방법을 onLeave로 함께 적어 두고, leave() 한 번으로 모두 정리한다.
+  function createRoomSession(meta) {
+    const cleanups = [];
+    const session = {
+      id: meta.id, meta, ref: db.log(meta.id),
+      ready: false,                                // 처음 불러온 메시지를 화면에 다 붙였는지
+      buffer: document.createDocumentFragment(),   // 처음 불러온 메시지를 모았다가 한 번에 붙이는 임시 공간
+      rendered: new Set(), store: new Map(),       // 그린 메시지 key / key -> 데이터 (다시 번역할 때 사용)
+      oldestKey: null, newestKey: null, hasMore: false, loadingMore: false,
+      lastDateKey: '',                             // 마지막으로 그린 메시지의 날짜 (날짜 구분선용)
+      hiddenUnread: 0,                             // 탭이 숨겨진 동안 온 메시지 수 (탭 제목용)
+      typingEntries: {},                           // 다른 사람들의 입력 중 상태
+      left: false,
+      onLeave(fn) { cleanups.push(fn); },
+      listen(query, event, handler) {
+        query.on(event, handler, error => console.warn('Room listener error:', event, error));
+        cleanups.push(() => query.off(event, handler));
+      },
+      leave() {
+        if (session.left) return;
+        session.left = true;
+        cleanups.splice(0).reverse().forEach(fn => { try { fn(); } catch (error) { console.warn('Room cleanup:', error); } });
+      }
+    };
+    session.typing = createTypingSender(session);
+    return session;
+  }
   function closeActiveRoom() {
-    enterSeq++; // 진행 중이던 입장 작업은 무시한다.
-    if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); messagesQuery = null; }
     if (isRecording) els.micBtn.click();
-    clearTyping(); unwatchTyping();
-    if (activeRoomId && roomSummaries[activeRoomId]) roomSummaries[activeRoomId].unread = 0;
-    activeRoomId = null; activeRoomMeta = null; activeRoomRef = null;
-    historyReady = false; hiddenUnread = 0; initialBuffer = null;
+    if (room) {
+      if (roomSummaries[room.id]) roomSummaries[room.id].unread = 0;
+      room.leave(); room = null;
+    }
+    renderTyping();
     els.chatContainer.innerHTML = '';
   }
 
@@ -629,42 +647,29 @@
 
   async function enterRoom(meta) {
     closeActiveRoom();
-    const seq = enterSeq;
-    activeRoomId = meta.id;
-    activeRoomMeta = meta;
+    const session = room = createRoomSession(meta);
     // 화면은 먼저 바꿔서 누르자마자 반응하게 한다.
     $('currentRoomName').textContent = meta.name || meta.id;
     els.lobbyScreen.classList.add('hidden');
     els.chatApp.classList.remove('hidden');
     closeModal(els.entryModal);
     document.title = baseTitle;
-    activeRoomRef = db.log(activeRoomId);
-    initialBuffer = document.createDocumentFragment();
     els.chatContainer.innerHTML = `<div class="text-center my-2"><span id="uiWelcome" data-i18n="welcome" class="bg-white text-slate-600 text-xs px-3.5 py-1.5 rounded-full soft-card">${safeHtml(t().welcome)}</span></div><div id="loadMoreWrap" class="hidden text-center my-3"><button id="loadMoreBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-xs font-semibold text-slate-700 soft-card hover:text-indigo-700 transition"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i><span id="loadMoreText" data-i18n="loadMore">${safeHtml(t().loadMore)}</span></button></div>`;
-    lastDateKey = ''; renderedKeys = new Set(); messageStore.clear();
-    oldestKey = null; newestKey = null; hasMoreMessages = false; loadingMore = false; historyReady = false; hiddenUnread = 0;
-    if (messagesQuery) { messagesQuery.off('child_added', messagesListener); messagesQuery.off('child_changed', changedListener); }
     // 처음에는 최근 PAGE_SIZE개만 불러온다. 이전 대화는 '더보기'를 누를 때 가져온다.
-    messagesQuery = activeRoomRef.orderByKey().limitToLast(PAGE_SIZE);
-    messagesListener = snapshot => {
-      const data = snapshot.val();
-      if (!data) return;
-      renderMessage(data, snapshot.key, { live: historyReady });
-    };
-    changedListener = snapshot => { const data = snapshot.val(); if (data) updateMessageElement(snapshot.key, data); };
-    messagesQuery.on('child_added', messagesListener, error => console.error('Message listener error:', error));
-    messagesQuery.on('child_changed', changedListener);
-    watchTyping(activeRoomId);
+    const recent = session.ref.orderByKey().limitToLast(PAGE_SIZE);
+    session.listen(recent, 'child_added', snapshot => { const data = snapshot.val(); if (data) renderMessage(data, snapshot.key, { live: session.ready }); });
+    session.listen(recent, 'child_changed', snapshot => { const data = snapshot.val(); if (data) updateMessageElement(snapshot.key, data); });
+    session.listen(db.typing(session.id), 'value', snapshot => { session.typingEntries = snapshot.val() || {}; renderTyping(); });
     setUILanguage(uiLang);
     try {
-      const initial = await messagesQuery.once('value');
-      if (seq !== enterSeq) return;
-      hasMoreMessages = initial.numChildren() >= PAGE_SIZE;
+      const initial = await recent.once('value');
+      if (session.left) return;
+      session.hasMore = initial.numChildren() >= PAGE_SIZE;
     } catch (error) { console.error('Initial load failed:', error); }
-    if (seq !== enterSeq) return;
+    if (session.left) return; // 기다리는 사이 방을 나감
     // 처음 불러온 메시지를 한 번에 화면에 붙인다.
-    if (initialBuffer) { els.chatContainer.appendChild(initialBuffer); initialBuffer = null; }
-    historyReady = true;
+    els.chatContainer.appendChild(session.buffer); session.buffer = null;
+    session.ready = true;
     updateLoadMoreButton(); maybeMarkRead(); scrollChatToBottom();
   }
 
@@ -793,7 +798,7 @@
       : `<option value="keep">${safeHtml(t().keepSetting)}</option><option value="enable">${safeHtml(t().enable)}</option>`;
     $('currentPasswordInput').value = ''; $('settingsNewPasswordInput').value = ''; clearError('settingsError'); updatePasswordSettingsFields(); openModal(els.roomSettingsModal);
   }
-  $('roomSettingsBtn').addEventListener('click', () => openRoomSettings(activeRoomMeta));
+  $('roomSettingsBtn').addEventListener('click', () => openRoomSettings(room && room.meta));
   $('passwordActionSelect').addEventListener('change', updatePasswordSettingsFields);
   $('settingsModalCloseBtn').addEventListener('click', () => closeModal(els.roomSettingsModal));
   $('settingsCancelBtn').addEventListener('click', () => closeModal(els.roomSettingsModal));
@@ -827,9 +832,9 @@
       if (passwordActionNeeded) { updates.password = nextPassword; }
       if (Object.keys(updates).length) await metaRef.update(updates);
       settingsTarget = { ...latest, ...updates };
-      if (settingsTarget.id === activeRoomId) {
-        activeRoomMeta = settingsTarget;
-        $('currentRoomName').textContent = activeRoomMeta.name || activeRoomId;
+      if (room && settingsTarget.id === room.id) {
+        room.meta = settingsTarget;
+        $('currentRoomName').textContent = room.meta.name || room.id;
       }
       setText('settingsPasswordStatus', nextPassword ? t().passwordOn : t().passwordOff);
       closeModal(els.roomSettingsModal);
@@ -1068,10 +1073,11 @@
   }
 
   async function sendMessage(text) {
-    if (!activeRoomRef || !text || !text.trim()) return;
+    const session = room;
+    if (!session || !text || !text.trim()) return;
     const cleanText = text.trim();
     // 원문을 먼저 보내 바로 화면에 보이게 하고, 번역은 동시에 진행한 뒤 같은 메시지에 채워 넣는다.
-    const msgRef = activeRoomRef.push();
+    const msgRef = session.ref.push();
     const key = msgRef.key;
     const data = { sender:myUserId, text:cleanText, translatedText:null, timestamp:Date.now() };
     translatingKeys.add(key);
@@ -1116,41 +1122,37 @@
   // roomTyping/{방}/{닉네임 키} = { name, ts }. 입력하는 동안 3초마다 갱신하고, 5초 동안 입력이 없거나 보내면 지운다.
   // 받는 쪽은 서버 시간 기준 8초가 지난 항목을 무시해서, 접속이 갑자기 끊긴 사람의 표시가 남지 않게 한다.
   const TYPING_REFRESH = 3000, TYPING_IDLE = 5000, TYPING_STALE = 8000;
-  let typingRef = null, typingSentAt = 0, typingIdleTimer = null;
-  let typingQuery = null, typingListener = null, typingEntries = {}, typingRenderTimer = null, typingHideTimer = null;
+  let typingRenderTimer = null, typingHideTimer = null;
   let serverTimeOffset = 0;
   database.ref('.info/serverTimeOffset').on('value', snapshot => { serverTimeOffset = Number(snapshot.val()) || 0; });
 
-  function notifyTyping() {
-    if (!activeRoomId) return;
-    if (!els.textInput.value.trim()) { clearTyping(); return; }
-    clearTimeout(typingIdleTimer);
-    typingIdleTimer = setTimeout(clearTyping, TYPING_IDLE);
-    if (typingRef && Date.now() - typingSentAt < TYPING_REFRESH) return;
-    if (!typingRef) {
-      typingRef = db.typing(activeRoomId, myUserId);
-      typingRef.onDisconnect().remove().catch(() => {});
+  // 방 세션마다 하나씩 만든다. 방을 나가면 세션이 clear()를 불러 서버에 남긴 표시를 지운다.
+  function createTypingSender(session) {
+    let ref = null, sentAt = 0, idleTimer = null;
+    function clear() {
+      clearTimeout(idleTimer); idleTimer = null;
+      if (!ref) return;
+      const old = ref; ref = null; sentAt = 0;
+      old.onDisconnect().cancel().catch(() => {});
+      old.remove().catch(() => {});
     }
-    typingSentAt = Date.now();
-    typingRef.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Typing status:', error));
+    function notify() {
+      if (!els.textInput.value.trim()) { clear(); return; }
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(clear, TYPING_IDLE);
+      if (ref && Date.now() - sentAt < TYPING_REFRESH) return;
+      if (!ref) {
+        ref = db.typing(session.id, myUserId);
+        ref.onDisconnect().remove().catch(() => {});
+      }
+      sentAt = Date.now();
+      ref.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Typing status:', error));
+    }
+    session.onLeave(clear);
+    return { notify, clear };
   }
-  function clearTyping() {
-    clearTimeout(typingIdleTimer); typingIdleTimer = null;
-    if (!typingRef) return;
-    const ref = typingRef; typingRef = null; typingSentAt = 0;
-    ref.onDisconnect().cancel().catch(() => {});
-    ref.remove().catch(() => {});
-  }
-  function watchTyping(roomId) {
-    typingQuery = db.typing(roomId);
-    typingListener = snapshot => { typingEntries = snapshot.val() || {}; renderTyping(); };
-    typingQuery.on('value', typingListener, error => console.warn('Typing listener:', error));
-  }
-  function unwatchTyping() {
-    if (typingQuery) { typingQuery.off('value', typingListener); typingQuery = null; }
-    typingEntries = {};
-    renderTyping();
-  }
+  const notifyTyping = () => { if (room) room.typing.notify(); };
+  const clearTyping = () => { if (room) room.typing.clear(); };
   // 한국어 주격 조사: 받침 없는 한글로 끝나면 '가', 그 밖에는 '이'
   function koSubjectParticle(name) {
     const code = String(name).trim().slice(-1).charCodeAt(0);
@@ -1161,7 +1163,7 @@
     const now = Date.now() + serverTimeOffset;
     const names = [];
     let nextExpiry = Infinity;
-    Object.values(typingEntries).forEach(entry => {
+    Object.values(room ? room.typingEntries : {}).forEach(entry => {
       if (!entry || !entry.name || entry.name === myUserId) return;
       const age = now - Number(entry.ts || 0);
       if (age > TYPING_STALE) return;
@@ -1223,61 +1225,65 @@
     return wrap;
   }
   function renderMessage(data, key, options = {}) {
+    if (!room) return;
     if (key) {
-      if (renderedKeys.has(key)) return;
-      renderedKeys.add(key); messageStore.set(key, data);
-      if (!oldestKey || key < oldestKey) oldestKey = key;
-      if (!newestKey || key > newestKey) newestKey = key;
+      if (room.rendered.has(key)) return;
+      room.rendered.add(key); room.store.set(key, data);
+      if (!room.oldestKey || key < room.oldestKey) room.oldestKey = key;
+      if (!room.newestKey || key > room.newestKey) room.newestKey = key;
     }
     const isMine = data.sender === myUserId;
     const box = els.chatContainer;
     // 위쪽 이전 대화를 보고 있을 때는 새 메시지가 와도 화면을 아래로 끌어내리지 않는다.
-    const stick = !historyReady || isMine || (box.scrollHeight - box.scrollTop - box.clientHeight < 160);
+    const stick = !room.ready || isMine || (box.scrollHeight - box.scrollTop - box.clientHeight < 160);
     const wrap = buildMessageElement(data, key);
     const stamp = Number(data.timestamp);
     // 입장 직후 처음 불러오는 동안에는 임시 공간에 모아 두었다가 한 번에 붙인다.
-    const target = (!historyReady && initialBuffer) ? initialBuffer : box;
+    const target = room.ready ? box : room.buffer;
     if (stamp) {
       const s = timeSettings();
       const dayKey = dateKeyOf(stamp, s);
-      if (dayKey !== lastDateKey) { target.appendChild(makeDateSeparator(stamp, s)); lastDateKey = dayKey; }
+      if (dayKey !== room.lastDateKey) { target.appendChild(makeDateSeparator(stamp, s)); room.lastDateKey = dayKey; }
     }
     target.appendChild(wrap);
     if (stick && target === box) scrollChatToBottom();
-    if (options.live && !isMine && document.hidden) { hiddenUnread++; updateChatTitle(); }
-    if (historyReady) maybeMarkRead();
+    if (options.live && !isMine && document.hidden) { room.hiddenUnread++; updateChatTitle(); }
+    if (room.ready) maybeMarkRead();
   }
   function updateMessageElement(key, data) {
-    messageStore.set(key, data);
+    if (!room) return;
+    room.store.set(key, data);
     // 아직 임시 공간에 있는 메시지도 찾을 수 있게 둘 다 확인한다.
     const selector = '[data-chat-message="true"][data-key="' + String(key).replace(/["\\]/g, '\\$&') + '"]';
-    const wrap = els.chatContainer.querySelector(selector) || (initialBuffer && initialBuffer.querySelector(selector));
+    const wrap = els.chatContainer.querySelector(selector) || (room.buffer && room.buffer.querySelector(selector));
     if (!wrap) return;
     const bubble = wrap.querySelector('.msg-bubble');
     if (bubble) fillBubble(bubble, data, data.sender === myUserId, key);
   }
   function updateLoadMoreButton() {
     const wrap = $('loadMoreWrap'), btn = $('loadMoreBtn');
-    if (!wrap || !btn) return;
-    wrap.classList.toggle('hidden', !hasMoreMessages);
-    btn.disabled = loadingMore;
+    if (!wrap || !btn || !room) return;
+    wrap.classList.toggle('hidden', !room.hasMore);
+    btn.disabled = room.loadingMore;
     const icon = btn.querySelector('i');
-    if (icon) icon.className = loadingMore ? 'fa-solid fa-spinner fa-spin text-[11px]' : 'fa-solid fa-clock-rotate-left text-[11px]';
+    if (icon) icon.className = room.loadingMore ? 'fa-solid fa-spinner fa-spin text-[11px]' : 'fa-solid fa-clock-rotate-left text-[11px]';
   }
   async function loadOlderMessages() {
-    if (loadingMore || !hasMoreMessages || !oldestKey || !activeRoomRef) return;
-    loadingMore = true; updateLoadMoreButton();
+    const session = room;
+    if (!session || session.loadingMore || !session.hasMore || !session.oldestKey) return;
+    session.loadingMore = true; updateLoadMoreButton();
     try {
-      const snap = await activeRoomRef.orderByKey().endAt(oldestKey).limitToLast(PAGE_SIZE + 1).once('value');
+      const snap = await session.ref.orderByKey().endAt(session.oldestKey).limitToLast(PAGE_SIZE + 1).once('value');
+      if (session.left) return; // 기다리는 사이 방을 나감
       const items = [];
-      snap.forEach(child => { if (child.key !== oldestKey && !renderedKeys.has(child.key)) items.push({ key: child.key, data: child.val() }); });
-      hasMoreMessages = snap.numChildren() >= PAGE_SIZE + 1;
+      snap.forEach(child => { if (child.key !== session.oldestKey && !session.rendered.has(child.key)) items.push({ key: child.key, data: child.val() }); });
+      session.hasMore = snap.numChildren() >= PAGE_SIZE + 1;
       const box = els.chatContainer, prevHeight = box.scrollHeight, prevTop = box.scrollTop;
       const fragment = document.createDocumentFragment();
       items.forEach(({ key, data }) => {
         if (!data) return;
-        renderedKeys.add(key); messageStore.set(key, data);
-        if (!oldestKey || key < oldestKey) oldestKey = key;
+        session.rendered.add(key); session.store.set(key, data);
+        if (!session.oldestKey || key < session.oldestKey) session.oldestKey = key;
         fragment.appendChild(buildMessageElement(data, key));
       });
       const anchor = $('loadMoreWrap');
@@ -1286,20 +1292,21 @@
       box.scrollTop = prevTop + (box.scrollHeight - prevHeight); // 보던 위치 유지
     } catch (error) {
       console.error('Load older failed:', error); showToast(t().loadMoreFail);
-    } finally { loadingMore = false; updateLoadMoreButton(); }
+    } finally { session.loadingMore = false; if (!session.left) updateLoadMoreButton(); }
   }
 
   // ---- 읽음 표시 / 탭 제목 알림 ----
   function maybeMarkRead() {
-    if (activeRoomId && newestKey && document.visibilityState === 'visible') writeLastRead(activeRoomId, newestKey);
+    if (room && room.newestKey && document.visibilityState === 'visible') writeLastRead(room.id, room.newestKey);
   }
   function updateChatTitle() {
-    const name = activeRoomMeta ? (activeRoomMeta.name || activeRoomMeta.id) : '';
-    document.title = hiddenUnread > 0 ? '(' + (hiddenUnread > 99 ? '99+' : hiddenUnread) + ') ' + t().newMessage + (name ? ' · ' + name : '') : baseTitle;
+    if (!room) return;
+    const name = room.meta.name || room.id, n = room.hiddenUnread;
+    document.title = n > 0 ? '(' + (n > 99 ? '99+' : n) + ') ' + t().newMessage + ' · ' + name : baseTitle;
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible' || !activeRoomId) return;
-    hiddenUnread = 0; updateChatTitle(); maybeMarkRead();
+    if (document.visibilityState !== 'visible' || !room) return;
+    room.hiddenUnread = 0; updateChatTitle(); maybeMarkRead();
   });
 
   // ---- 번역문 복사 / 다시 번역 ----
@@ -1331,8 +1338,9 @@
   async function retryTranslation(btn) {
     const wrap = btn.closest('[data-chat-message="true"]');
     const key = wrap && wrap.dataset.key;
-    const data = key && messageStore.get(key);
-    if (!data || btn.disabled || !activeRoomRef) return;
+    const session = room;
+    const data = key && session && session.store.get(key);
+    if (!data || btn.disabled) return;
     btn.disabled = true;
     const icon = btn.querySelector('i'); if (icon) icon.classList.add('fa-spin');
     const result = await translateText(data.text);
@@ -1342,7 +1350,7 @@
       return;
     }
     try {
-      await activeRoomRef.child(key).update({ translatedText: result.text });
+      await session.ref.child(key).update({ translatedText: result.text });
       updateMessageElement(key, Object.assign({}, data, { translatedText: result.text }));
     } catch (error) {
       console.error('Retry save failed:', error); showToast(t().sendFail);
@@ -1385,7 +1393,7 @@
       const time = message.querySelector('[data-message-timestamp]'); if (time) time.textContent = formatMessageTime(stamp);
       if (key !== lastKey) { els.chatContainer.insertBefore(makeDateSeparator(stamp, s), message); lastKey = key; }
     });
-    lastDateKey = lastKey;
+    if (room) room.lastDateKey = lastKey;
   }
 
   // 음성 입력 (브라우저가 지원하는 경우)
@@ -1398,7 +1406,7 @@
     function updateSTTLanguage() { recognition.lang = ({ko:'ko-KR',zh:'zh-TW',ja:'ja-JP',en:'en-US'})[els.sourceLangSelect.value] || 'ko-KR'; }
     function stopRecordingUI() { els.micBtn.classList.remove('recording-active'); els.micIcon.className = 'fa-solid fa-microphone'; els.textInput.placeholder = t().inputPlaceholder; }
     els.micBtn.addEventListener('click', () => {
-      if (!activeRoomId) return;
+      if (!room) return;
       if (!isRecording) { isManualStop = false; updateSTTLanguage(); try { recognition.start(); } catch (error) { console.warn('STT start:', error); } }
       else { isManualStop = true; isRecording = false; try { recognition.stop(); recognition.abort(); } catch (error) {} stopRecordingUI(); }
     });
