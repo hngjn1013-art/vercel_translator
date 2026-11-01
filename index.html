@@ -437,7 +437,7 @@
         Object.values(rooms).filter(isRoom).forEach(r => {
           cachedRooms[r.id] = { id: r.id, name: r.name, icon: r.icon, color: r.color, createdAt: r.createdAt, password: r.password ? true : '' };
           const sm = summaries[r.id];
-          if (sm && sm.loaded) cachedSummaries[r.id] = { loaded: true, key: sm.key, sender: sm.sender, text: r.password ? '' : sm.text, timestamp: sm.timestamp, unread: sm.unread || 0 };
+          if (sm && sm.loaded) cachedSummaries[r.id] = { loaded: true, key: sm.key, sender: sm.sender, text: r.password ? '' : sm.text, translatedText: r.password ? '' : sm.translatedText, timestamp: sm.timestamp, unread: sm.unread || 0 };
         });
         localStorage.setItem(cacheKey, JSON.stringify({ rooms: cachedRooms, summaries: cachedSummaries }));
       } catch (error) {}
@@ -484,8 +484,9 @@
     async function onLatestMessage(id, last) {
       const sm = summaryOf(id);
       sm.loaded = true;
-      if (!last) { Object.assign(sm, { key: null, sender: null, text: null, timestamp: null, unread: 0 }); changed(); return; }
-      Object.assign(sm, { key: last.key, sender: last.sender, text: last.text, timestamp: last.timestamp });
+      if (!last) { Object.assign(sm, { key: null, sender: null, text: null, translatedText: null, timestamp: null, unread: 0 }); changed(); return; }
+      // 번역은 메시지가 올라온 뒤에 채워지므로, 번역이 도착하면 이 구독이 다시 불려 미리보기도 바뀐다.
+      Object.assign(sm, { key: last.key, sender: last.sender, text: last.text, translatedText: last.translatedText || null, timestamp: last.timestamp });
       changed();
       const lastRead = readLastRead(id);
       let unread = 0;
@@ -574,6 +575,8 @@
       const unread = summary ? (summary.unread || 0) : 0;
       // 비밀번호가 있는 방은 마지막 메시지를 보여주지 않는다.
       const previewText = locked ? el.lockedPreview : (summary && summary.loaded ? (summary.text ? String(summary.text).replace(/\s+/g, ' ').trim() : el.noMessages) : '');
+      // 마지막 메시지의 번역도 원문 아래에 한 줄로 보여 준다. (비밀번호 방은 원문처럼 숨긴다)
+      const previewTranslation = !locked && summary && summary.translatedText ? String(summary.translatedText).replace(/\s+/g, ' ').trim() : '';
       const timeLabel = summary && summary.timestamp ? formatListTime(summary.timestamp) : '';
       // 지금 이 방에 들어와 있는 사람 수 (누구인지는 보여 주지 않는다)
       const present = summary ? (summary.present || 0) : 0;
@@ -586,6 +589,7 @@
           <span class="min-w-0 flex-1">
             <span class="flex items-center gap-1.5 min-w-0"><span class="font-semibold text-slate-800 text-sm truncate">${roomName}</span><i class="fa-solid ${locked ? 'fa-lock text-slate-400' : 'fa-lock-open text-slate-300'} text-[11px] shrink-0"></i>${presentHtml}</span>
             <span class="room-preview block text-xs ${unread > 0 ? 'text-slate-800 font-medium' : 'text-slate-500'} truncate mt-0.5">${safeHtml(previewText)}</span>
+            ${previewTranslation ? `<span class="room-preview-translation flex items-center gap-1 min-w-0 text-xs text-indigo-700 mt-0.5"><i class="fa-solid fa-language text-[10px] opacity-75 shrink-0" aria-hidden="true"></i><span class="truncate">${safeHtml(previewTranslation)}</span></span>` : ''}
           </span>
           ${listEditMode ? '' : `<span class="flex flex-col items-end justify-between self-stretch gap-1 shrink-0 min-h-[2.5rem]"><span class="room-time text-[11px] text-slate-400 whitespace-nowrap">${safeHtml(timeLabel)}</span>${badge}</span>`}
         </button>
