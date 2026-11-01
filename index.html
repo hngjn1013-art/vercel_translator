@@ -1324,6 +1324,16 @@
     els.micBtn.disabled = true; els.micBtn.classList.add('opacity-50','cursor-not-allowed');
   }
 
+  // 입력·번역 언어도 화면 언어처럼 탭마다 따로 기억하고, 새 탭은 마지막으로 고른 값으로 시작한다.
+  [[els.sourceLangSelect, 'chatSourceLang'], [els.targetLangSelect, 'chatTargetLang']].forEach(([select, storageKey]) => {
+    const saved = (() => { try { return sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey); } catch (error) { return null; } })();
+    if (saved && Array.from(select.options).some(option => option.value === saved)) select.value = saved;
+    select.addEventListener('change', () => {
+      try { sessionStorage.setItem(storageKey, select.value); } catch (error) {}
+      try { localStorage.setItem(storageKey, select.value); } catch (error) {}
+    });
+  });
+
   // 첫 화면 언어 설정과 진입 초기화
   setUILanguage(uiLang);
   routeIntoRequestedRoom();
