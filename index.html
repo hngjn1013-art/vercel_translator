@@ -653,6 +653,7 @@
       typingEntries: {},                           // 다른 사람들의 입력 중 상태
       presenceEntries: {},                         // 이 방에 접속 중인 사람들
       left: false,
+      markers: [],                                 // 이 방에서 서버에 남긴 내 표시 (입력 중, 접속 중)
       onLeave(fn) { cleanups.push(fn); },
       listen(query, event, handler) {
         query.on(event, handler, error => console.warn('Room listener error:', event, error));
@@ -665,7 +666,7 @@
       }
     };
     session.typing = createTypingSender(session);
-    session.presence = createPresence(session);
+    session.presence = createMarker(session, db.presence);
     return session;
   }
   function closeActiveRoom() {
@@ -702,7 +703,7 @@
     session.listen(recent, 'child_added', snapshot => { const data = snapshot.val(); if (data) renderMessage(data, snapshot.key, { live: session.ready }); });
     session.listen(recent, 'child_changed', snapshot => { const data = snapshot.val(); if (data) updateMessageElement(snapshot.key, data); });
     session.listen(db.typing(session.id), 'value', snapshot => { session.typingEntries = snapshot.val() || {}; renderTyping(); });
-    session.presence.mark();
+    session.presence.set();
     session.listen(db.presence(session.id), 'value', snapshot => { session.presenceEntries = snapshot.val() || {}; renderPresence(); });
     // 다른 사람이 이 방을 지우면 목록으로 나가고, 이름을 바꾸면 헤더에 바로 반영한다. (지워진 방에 계속 보내면 보이지 않는 기록만 쌓인다)
     session.listen(db.directory().child(session.id), 'value', snapshot => {
@@ -1054,9 +1055,8 @@
   $('saveUserBtn').addEventListener('click', () => {
     const val = $('newUserIdInput').value.trim();
     if (!val) return;
-    clearTyping(); // 예전 닉네임으로 남은 입력 중 표시를 지운다.
     myUserId = val; try { localStorage.setItem('myUserId', myUserId); } catch (error) {} renderUserChips(); renderTyping();
-    if (room) room.presence.mark(); // 접속 중 표시를 새 닉네임으로 옮긴다.
+    if (room) room.markers.forEach(marker => marker.refresh()); // 입력 중·접속 중 표시를 새 닉네임 자리로 옮긴다.
     renderPresence(); closeUserModal();
   });
   $('newUserIdInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('saveUserBtn').click(); });
@@ -1207,57 +1207,57 @@
     }
   });
 
-  // 방 세션마다 하나씩 만든다. 방을 나가면 세션이 clear()를 불러 서버에 남긴 표시를 지운다.
-  function createTypingSender(session) {
-    let ref = null, sentAt = 0, idleTimer = null;
-    function clear() {
-      clearTimeout(idleTimer); idleTimer = null;
-      if (!ref) return;
-      const old = ref; ref = null; sentAt = 0;
-      old.onDisconnect().cancel().catch(() => {});
-      old.remove().catch(() => {});
-    }
-    function notify() {
-      if (!els.textInput.value.trim()) { clear(); return; }
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(clear, TYPING_IDLE);
-      if (ref && Date.now() - sentAt < TYPING_REFRESH) return;
-      if (!ref) {
-        ref = db.typing(session.id, myUserId);
-        ref.onDisconnect().remove().catch(() => {});
-      }
-      sentAt = Date.now();
-      ref.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Typing status:', error));
-    }
-    const reregister = () => { if (ref) ref.onDisconnect().remove().catch(() => {}); };
-    reconnectHandlers.add(reregister);
-    session.onLeave(() => { reconnectHandlers.delete(reregister); clear(); });
-    return { notify, clear };
-  }
-  const notifyTyping = () => { if (room) room.typing.notify(); };
-  const clearTyping = () => { if (room) room.typing.clear(); };
-  // ---- 접속 중인 사람 ----
-  // roomPresence/{방}/{닉네임 키} = { name, ts }. 방에 들어오면 쓰고, 나가거나 연결이 끊기면(onDisconnect) 지운다.
-  function createPresence(session) {
+  // ---- 내 표시 ----
+  // 방 안에서 '나'를 서버에 표시해 두는 기록(입력 중, 접속 중)의 공통 동작. path(방 id, 닉네임)로 정한 곳에 { name, ts }를 쓴다.
+  // - 연결이 끊기면 서버가 지우도록(onDisconnect) 해 두고, 다시 연결되면 다시 쓴다. (끊긴 동안 서버가 지웠으므로)
+  // - 닉네임이 바뀌면 refresh()로 새 이름 자리로 옮긴다.
+  // - 방을 나가면 세션이 정리하면서 지운다.
+  function createMarker(session, path) {
     let ref = null;
-    function unmark() {
+    const write = () => ref.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Marker write:', error));
+    function clear() {
       if (!ref) return;
       ref.onDisconnect().cancel().catch(() => {});
       ref.remove().catch(() => {});
       ref = null;
     }
-    // 처음 들어올 때, 닉네임을 바꿨을 때, 끊겼다가 다시 연결됐을 때 부른다.
-    function mark() {
-      const next = db.presence(session.id, myUserId);
-      if (ref && ref.toString() !== next.toString()) unmark();
-      ref = next;
-      ref.onDisconnect().remove().catch(() => {});
-      ref.set({ name: myUserId, ts: firebase.database.ServerValue.TIMESTAMP }).catch(error => console.warn('Presence:', error));
+    function set() {
+      const next = path(session.id, myUserId);
+      if (ref && ref.toString() !== next.toString()) clear();
+      if (!ref) { ref = next; ref.onDisconnect().remove().catch(() => {}); }
+      write();
     }
-    reconnectHandlers.add(mark);
-    session.onLeave(() => { reconnectHandlers.delete(mark); unmark(); });
-    return { mark };
+    const reconnect = () => { if (!ref) return; ref.onDisconnect().remove().catch(() => {}); write(); };
+    reconnectHandlers.add(reconnect);
+    session.onLeave(() => { reconnectHandlers.delete(reconnect); clear(); });
+    const marker = { set, clear, isSet: () => !!ref, refresh: () => { if (ref) set(); } };
+    session.markers.push(marker);
+    return marker;
   }
+
+  // 입력하는 동안 3초마다 '입력 중'을 갱신하고, 5초 동안 입력이 없으면 지운다.
+  function createTypingSender(session) {
+    const marker = createMarker(session, db.typing);
+    let sentAt = 0, idleTimer = null;
+    function clear() {
+      clearTimeout(idleTimer); idleTimer = null; sentAt = 0;
+      marker.clear();
+    }
+    function notify() {
+      if (!els.textInput.value.trim()) { clear(); return; }
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(clear, TYPING_IDLE);
+      if (marker.isSet() && Date.now() - sentAt < TYPING_REFRESH) return;
+      sentAt = Date.now();
+      marker.set();
+    }
+    session.onLeave(() => clearTimeout(idleTimer));
+    return { notify, clear };
+  }
+  const notifyTyping = () => { if (room) room.typing.notify(); };
+  const clearTyping = () => { if (room) room.typing.clear(); };
+  // ---- 접속 중인 사람 ----
+  // 접속 중 표시는 roomPresence/{방}/{닉네임 키}에 '내 표시'(createMarker)로 기록한다.
   // 방 이름 아래에 '● Tom, 민준 접속 중'을 보여 준다. 나는 빼고, 3명 이상이면 'Tom 외 2명'으로 줄인다.
   function renderPresence() {
     const tx = t();
