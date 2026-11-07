@@ -2,10 +2,11 @@ const { raceFirstChunk } = require("./_race");
 
 // 요청 순서: 1차 → (4초 안에 첫 글자가 없으면) 2차 동시 요청 → (그 뒤 5초 안에 없으면) 3차 동시 요청
 // 먼저 첫 글자를 주는 쪽을 쓰고 나머지는 취소한다. 3차만 다른 모델을 쓴다.
+// 1차만 생각을 조금(LOW) 시켜 품질을 올리고, 2차·3차는 속도 보험이라 MINIMAL로 둔다.
 const ATTEMPTS = [
-  { model: "gemini-3.5-flash-lite", nextAfterMs: 4000 },
-  { model: "gemini-3.5-flash-lite", nextAfterMs: 5000 },
-  { model: "gemini-3.1-flash-lite", nextAfterMs: null }
+  { model: "gemini-3.5-flash-lite", thinkingLevel: "LOW", nextAfterMs: 4000 },
+  { model: "gemini-3.5-flash-lite", thinkingLevel: "MINIMAL", nextAfterMs: 5000 },
+  { model: "gemini-3.1-flash-lite", thinkingLevel: "MINIMAL", nextAfterMs: null }
 ];
 // 첫 글자를 기다리는 최대 시간(여러 번 시도한 시간을 모두 합친 것)
 const TOTAL_TIMEOUT_MS = 30000;
@@ -41,7 +42,7 @@ async function* readSse(response) {
   if (buffer.startsWith("data:")) yield buffer.slice(5).trim();
 }
 
-async function* geminiStream({ model, systemPrompt, userText, signal }) {
+async function* geminiStream({ model, thinkingLevel, systemPrompt, userText, signal }) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
@@ -63,7 +64,7 @@ async function* geminiStream({ model, systemPrompt, userText, signal }) {
         temperature: 0.2,
         maxOutputTokens: 2048,
         thinkingConfig: {
-          thinkingLevel: "MINIMAL"
+          thinkingLevel
         }
       }
     }),
@@ -158,7 +159,7 @@ module.exports = async function (req, res) {
 
     const { attempt, first, error: lastError } = await raceFirstChunk({
       attempts: ATTEMPTS,
-      startStream: ({ model }, signal) => geminiStream({ model, systemPrompt, userText, signal }),
+      startStream: ({ model, thinkingLevel }, signal) => geminiStream({ model, thinkingLevel, systemPrompt, userText, signal }),
       totalTimeoutMs: TOTAL_TIMEOUT_MS,
       signal: clientGone.signal
     });
